@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/util/store.dart';
 import 'package:provider/provider.dart';
+import 'package:localstorage/localstorage.dart';
 
 class InputMoney extends StatefulWidget {
   @override
@@ -17,9 +18,29 @@ class _InputMoneyState extends State<InputMoney> {
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _moneyFocus = FocusNode();
 
+  //localStorage
+  final LocalStorage storage = new LocalStorage('trip');
+
+//  var now = DateTime.now();
+
+  var today = DateTime.now().year.toString() +
+      (DateTime.now().month.toString().length == 1
+          ? "0" + DateTime.now().month.toString()
+          : DateTime.now().month.toString()) +
+      (DateTime.now().day.toString().length == 1
+          ? "0" + DateTime.now().day.toString()
+          : DateTime.now().day.toString());
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
+    var getData = storage.getItem("use_money");
+
+    int sum = 0;
+
+    for (var name in getData[today]) {
+      sum += int.parse(name["money"]);
+    }
 
     return Container(
       child: Center(
@@ -66,11 +87,12 @@ class _InputMoneyState extends State<InputMoney> {
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black54),
                                   ),
-                                  Text(
-                                    formatter.format(Provider.of<Money>(context)
-                                        .getTodayTotalMoney),
-                                    textScaleFactor: 1.4,
-                                  )
+                                  Text(sum.toString())
+//                                  Text(
+//                                    formatter.format(Provider.of<Money>(context)
+//                                        .getTodayTotalMoney),
+//                                    textScaleFactor: 1.4,
+//                                  )
                                 ],
                               ))
                             ],
@@ -166,11 +188,24 @@ class _InputMoneyState extends State<InputMoney> {
                                   color: Colors.lightBlue,
                                   onPressed: () {
                                     if (_formKey.currentState.validate()) {
-                                      final _inputTitle =
-                                          _title.text.toString();
-                                      final _inputMoney = _money.text;
-                                      Provider.of<Money>(context).setTodayList(
-                                          _inputTitle, _inputMoney);
+                                      final todayData = getData[today];
+
+                                      final todayNewData = {
+                                        'title': _title.text.toString(),
+                                        'money': _money.text
+                                      };
+
+                                      todayData.add(todayNewData);
+
+                                      setState(() {
+                                        getData[today] = todayData;
+                                      });
+
+//                                      storage.setItem("use_money", value)
+
+//                                      Provider.of<Money>(context).setTodayList(
+//                                          _inputTitle, _inputMoney);
+
                                       _title.text = '';
                                       _money.text = '';
                                       FocusScope.of(context)
@@ -195,7 +230,58 @@ class _InputMoneyState extends State<InputMoney> {
   }
 
   Widget _myListView(BuildContext context) {
-    final data = Provider.of<Money>(context, listen: true).getTodayList;
+//    final data = Provider.of<Money>(context, listen: true).getTodayList;
+    final data = storage.getItem('use_money');
+
+    print('data : ' + data.toString());
+
+    return FutureBuilder(
+      future: storage.ready,
+      builder: (BuildContext context, snapshot) {
+        if (snapshot.data == true) {
+          Map<String, dynamic> data = storage.getItem('use_money');
+          print('gogo' + data.containsKey(today).toString());
+
+          List todayList = data[today];
+          return ListView.builder(
+              itemCount: todayList.length,
+              itemBuilder: (context, index) {
+                print('todayList ' + todayList[index].toString());
+                return SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.1,
+                  child: GestureDetector(
+                    onLongPress: () {
+                      print('asdasd : ' + data[today].toString());
+                      print('index : ' + index.toString());
+                      setState(() {
+                        data[today].removeAt(index);
+                      });
+                    },
+                    child: Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25)),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                              top: 10,
+                              left: MediaQuery.of(context).size.width * 0.05,
+                              right: MediaQuery.of(context).size.width * 0.05,
+                              bottom: 10),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              Text(todayList[index]["title"]),
+                              Text(todayList[index]["money"]),
+                            ],
+                          ),
+                        )),
+                  ),
+                );
+              });
+        } else {
+          return Text('nono');
+        }
+      },
+    );
 
     return ListView.builder(
       itemCount: data.length,
