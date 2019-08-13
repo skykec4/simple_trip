@@ -38,10 +38,11 @@ class _InputMoneyState extends State<InputMoney> {
 
     int sum = 0;
 
+    print('gogo');
     if (getData != null && getData.containsKey(today)) {
+      getData[today]=[];
 
       for (var name in getData[today]) {
-
         sum += int.parse(name["money"]);
       }
     }
@@ -191,38 +192,59 @@ class _InputMoneyState extends State<InputMoney> {
                                   ),
                                   color: Colors.lightBlue,
                                   onPressed: () {
-
+                                    var _getData = storage.getItem("use_money");
+                                    print('gjgjgj?? $_getData');
                                     if (_formKey.currentState.validate()) {
-//
-                                      if(!getData.containsKey(today)){
-                                        print('gjgjgj?? $getData');
-                                        getData[today]=[];
+
+//                                      if (getData == null) {
+//                                        storage
+//                                            .setItem("use_money", {today: []});
+//                                      }
+
+
+                                      print('aaa $_getData');
+
+                                      if (!_getData.containsKey(today)) {
+                                        print('gjgjgj?1111 $getData');
+                                        setState(() {
+                                          getData[today] = [];
+                                        });
+
                                       }
 
-                                      print('sd1f  $getData');
-                                      final todayData = getData[today];
+                                      print('아니왜요!!  $_getData');
+                                      var todayData = _getData[today];
 
 
-
-
-                                      final todayNewData = {
+                                      var todayNewData = {
                                         'title': _title.text.toString(),
                                         'money': _money.text
                                       };
+                                      print('todayData :::: $todayData');
 
-                                      todayData.add(todayNewData);
 
                                       setState(() {
-                                        getData[today] = todayData;
+                                        todayData.add(todayNewData);
                                       });
 
-//                                      storage.setItem("use_money", value)
+
+                                      setState(() {
+                                        _getData[today].add(todayData);
+                                      });
+
+                                      setState(() {
+                                        getData =_getData;
+
+                                      });
+                                      storage.setItem("use_money", getData);
 
 //                                      Provider.of<Money>(context).setTodayList(
 //                                          _inputTitle, _inputMoney);
 
                                       _title.text = '';
                                       _money.text = '';
+
+                                      print('확인차 $getData');
                                       FocusScope.of(context)
                                           .requestFocus(new FocusNode());
                                     }
@@ -247,14 +269,14 @@ class _InputMoneyState extends State<InputMoney> {
   Widget _myListView(BuildContext context) {
 //    final data = Provider.of<Money>(context, listen: true).getTodayList;
 
-    final data = storage.getItem('use_money');
+    var data = storage.getItem('use_money');
 
     print('data : ' + data.toString());
     if (data == null) {
       return Center(child: Text('엄써용'));
     }
 
-    if(!data.containsKey(today)){
+    if (!data.containsKey(today)) {
       return Center(child: Text('엄써용'));
     }
 
