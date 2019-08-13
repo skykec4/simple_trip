@@ -38,8 +38,12 @@ class _InputMoneyState extends State<InputMoney> {
 
     int sum = 0;
 
-    for (var name in getData[today]) {
-      sum += int.parse(name["money"]);
+    if (getData != null && getData.containsKey(today)) {
+
+      for (var name in getData[today]) {
+
+        sum += int.parse(name["money"]);
+      }
     }
 
     return Container(
@@ -187,8 +191,19 @@ class _InputMoneyState extends State<InputMoney> {
                                   ),
                                   color: Colors.lightBlue,
                                   onPressed: () {
+
                                     if (_formKey.currentState.validate()) {
+//
+                                      if(!getData.containsKey(today)){
+                                        print('gjgjgj?? $getData');
+                                        getData[today]=[];
+                                      }
+
+                                      print('sd1f  $getData');
                                       final todayData = getData[today];
+
+
+
 
                                       final todayNewData = {
                                         'title': _title.text.toString(),
@@ -231,9 +246,17 @@ class _InputMoneyState extends State<InputMoney> {
 
   Widget _myListView(BuildContext context) {
 //    final data = Provider.of<Money>(context, listen: true).getTodayList;
+
     final data = storage.getItem('use_money');
 
     print('data : ' + data.toString());
+    if (data == null) {
+      return Center(child: Text('엄써용'));
+    }
+
+    if(!data.containsKey(today)){
+      return Center(child: Text('엄써용'));
+    }
 
     return FutureBuilder(
       future: storage.ready,
