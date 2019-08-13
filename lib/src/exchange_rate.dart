@@ -204,18 +204,10 @@ class PhotosList extends StatelessWidget {
                     elevation: 10,
                     child: Column(
                       children: <Widget>[
-//                        Text(photos[index].result.toString()),
                         ListTile(
-//                      leading: Icon(Icons.attach_money),
                           leading:
                           FadeInImage.assetNetwork(width: 50,height: 50,placeholder: 'assets/nation_flag_loading2.gif', image: returnUrl(nation[flags])),
-//                      Image.network(
-////                          'https://www.countryflags.io/kr/shiny/64.png'
-//                      returnUrl(nation[flags])
-//                      ),
                           title: Text("${nationName[nation[flags]]} (${photos[index].cur_nm.split(" ").length == 1 ?photos[index].cur_nm :photos[index].cur_nm.split(" ")[1]})"),
-//                      title: Text("${photos[index].cur_nm}"),
-//                      subtitle: Text("${photos[index].cur_unit}"),
                           subtitle: Text("${photos[index].cur_unit}"),
                           trailing: Padding(
                             padding: const EdgeInsets.all(8.0),
