@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:myapp/util/store.dart';
+
+//import 'package:myapp/util/store.dart';
 import 'package:provider/provider.dart';
 import 'package:localstorage/localstorage.dart';
+
+import 'dart:async';
+import 'package:myapp/models/money.dart';
+import 'package:myapp/utils/database_helper.dart';
+import 'package:sqflite/sqflite.dart';
 
 class InputMoney extends StatefulWidget {
   @override
@@ -10,6 +16,10 @@ class InputMoney extends StatefulWidget {
 }
 
 class _InputMoneyState extends State<InputMoney> {
+  DatabaseHelper databaseHelper = DatabaseHelper();
+  List<Money> moneyList;
+  int count = 0;
+
   final _formKey = GlobalKey<FormState>();
   TextEditingController _title = TextEditingController();
   TextEditingController _money = TextEditingController();
@@ -34,17 +44,16 @@ class _InputMoneyState extends State<InputMoney> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    var getData = storage.getItem("use_money");
+//    var getData = storage.getItem("use_money");
+//    print(getData);
+    if (moneyList == null) {
+      moneyList = List<Money>();
+      updateListView();
+    }
+    int total = 0;
 
-    int sum = 0;
-
-    print('gogo');
-    if (getData != null && getData.containsKey(today)) {
-      getData[today]=[];
-
-      for (var name in getData[today]) {
-        sum += int.parse(name["money"]);
-      }
+    for (int i = 0; i < moneyList.length; i++) {
+      total = total + moneyList[i].money;
     }
 
     return Container(
@@ -73,15 +82,17 @@ class _InputMoneyState extends State<InputMoney> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
-                              Text(
-                                Provider.of<Money>(context, listen: true)
-                                    .getNow
-                                    .toString(),
-                                textScaleFactor: 1.5,
-                                style: TextStyle(
-                                    color: Colors.black54,
-                                    fontWeight: FontWeight.bold),
-                              ),
+                              Text(DateFormat('yyyy-MM-dd')
+                                  .format(DateTime.now())),
+//                              Text(
+//                                Provider.of<Money>(context, listen: true)
+//                                    .getNow
+//                                    .toString(),
+//                                textScaleFactor: 1.5,
+//                                style: TextStyle(
+//                                    color: Colors.black54,
+//                                    fontWeight: FontWeight.bold),
+//                              ),
                               Container(
                                   child: Row(
                                 children: <Widget>[
@@ -92,7 +103,7 @@ class _InputMoneyState extends State<InputMoney> {
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black54),
                                   ),
-                                  Text(sum.toString())
+                                  Text(total.toString())
 //                                  Text(
 //                                    formatter.format(Provider.of<Money>(context)
 //                                        .getTodayTotalMoney),
@@ -192,59 +203,19 @@ class _InputMoneyState extends State<InputMoney> {
                                   ),
                                   color: Colors.lightBlue,
                                   onPressed: () {
-                                    var _getData = storage.getItem("use_money");
-                                    print('gjgjgj?? $_getData');
                                     if (_formKey.currentState.validate()) {
-
-//                                      if (getData == null) {
-//                                        storage
-//                                            .setItem("use_money", {today: []});
-//                                      }
-
-
-                                      print('aaa $_getData');
-
-                                      if (!_getData.containsKey(today)) {
-                                        print('gjgjgj?1111 $getData');
-                                        setState(() {
-                                          getData[today] = [];
-                                        });
-
-                                      }
-
-                                      print('아니왜요!!  $_getData');
-                                      var todayData = _getData[today];
-
-
-                                      var todayNewData = {
-                                        'title': _title.text.toString(),
+                                      final list = {
+                                        'title': _title.text,
                                         'money': _money.text
                                       };
-                                      print('todayData :::: $todayData');
-
-
-                                      setState(() {
-                                        todayData.add(todayNewData);
-                                      });
-
-
-                                      setState(() {
-                                        _getData[today].add(todayData);
-                                      });
-
-                                      setState(() {
-                                        getData =_getData;
-
-                                      });
-                                      storage.setItem("use_money", getData);
-
-//                                      Provider.of<Money>(context).setTodayList(
-//                                          _inputTitle, _inputMoney);
+//                                      Provider.of<Money>(context)
+//                                          .setToday(list);
+                                      _save(
+                                          _title.text, int.parse(_money.text));
 
                                       _title.text = '';
                                       _money.text = '';
 
-                                      print('확인차 $getData');
                                       FocusScope.of(context)
                                           .requestFocus(new FocusNode());
                                     }
@@ -268,113 +239,179 @@ class _InputMoneyState extends State<InputMoney> {
 
   Widget _myListView(BuildContext context) {
 //    final data = Provider.of<Money>(context, listen: true).getTodayList;
-
-    var data = storage.getItem('use_money');
-
-    print('data : ' + data.toString());
-    if (data == null) {
-      return Center(child: Text('엄써용'));
+    if (moneyList == null) {
+      moneyList = List<Money>();
     }
-
-    if (!data.containsKey(today)) {
-      return Center(child: Text('엄써용'));
-    }
-
-    return FutureBuilder(
-      future: storage.ready,
-      builder: (BuildContext context, snapshot) {
-        if (snapshot.data == true) {
-          Map<String, dynamic> data = storage.getItem('use_money');
-          print('gogo' + data.containsKey(today).toString());
-
-          List todayList = data[today];
-          return ListView.builder(
-              itemCount: todayList.length,
-              itemBuilder: (context, index) {
-                print('todayList ' + todayList[index].toString());
-                return SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.1,
-                  child: GestureDetector(
-                    onLongPress: () {
-                      print('asdasd : ' + data[today].toString());
-                      print('index : ' + index.toString());
-                      setState(() {
-                        data[today].removeAt(index);
-                      });
-                    },
-                    child: Card(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25)),
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                              top: 10,
-                              left: MediaQuery.of(context).size.width * 0.05,
-                              right: MediaQuery.of(context).size.width * 0.05,
-                              bottom: 10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              Text(todayList[index]["title"]),
-                              Text(todayList[index]["money"]),
-                            ],
-                          ),
-                        )),
-                  ),
-                );
-              });
-        } else {
-          return Text('nono');
-        }
-      },
-    );
+    print("moneyList :::: $moneyList");
+//    var today = Provider.of<Money>(context).getToday;
 
     return ListView.builder(
-      itemCount: data.length,
-      itemBuilder: (context, index) {
-        print('' + data.length.toString());
-        if (data.length == 0) {
-          print('hi');
-          return Center(
-              child: Text(
-            '항목을 추가해주세요!!',
-            textScaleFactor: 1.5,
-            style: TextStyle(color: Colors.grey),
-          ));
-        }
-
-        final title = data[index]['title'];
-        final money = data[index]['money'];
-
-        print('!!!!checkehck $title, $money');
-
-        return Card(
-          elevation: 14,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 5,
-              right: 5,
-            ),
-            child: ListTile(
+        itemCount: moneyList.length,
+        itemBuilder: (context, index) {
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.1,
+            child: GestureDetector(
               onLongPress: () {
-                Provider.of<Money>(context).removeTodayList(index);
+                _delete(context, moneyList[index]);
               },
-              title: Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold),
-                textScaleFactor: 1.2,
-              ),
-              trailing: Text(
-                formatter.format(int.parse(money)),
-                style: TextStyle(fontWeight: FontWeight.bold),
-                textScaleFactor: 1.2,
-              ),
+              child: Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25)),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                        top: 10,
+                        left: MediaQuery.of(context).size.width * 0.05,
+                        right: MediaQuery.of(context).size.width * 0.05,
+                        bottom: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Text(moneyList[index].title),
+                        Text(moneyList[index].money.toString()),
+                      ],
+                    ),
+                  )),
             ),
-          ),
-        );
-      },
+          );
+        });
+
+//    return ListView.builder(
+//        itemCount: today.length,
+//        itemBuilder: (context, index) {
+//          return SizedBox(
+//            height: MediaQuery.of(context).size.height * 0.1,
+//            child: GestureDetector(
+//              onLongPress: () {},
+//              child: Card(
+//                  shape: RoundedRectangleBorder(
+//                      borderRadius: BorderRadius.circular(25)),
+//                  child: Padding(
+//                    padding: EdgeInsets.only(
+//                        top: 10,
+//                        left: MediaQuery.of(context).size.width * 0.05,
+//                        right: MediaQuery.of(context).size.width * 0.05,
+//                        bottom: 10),
+//                    child: Row(
+//                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                      children: <Widget>[
+//                        Text(today[index]["title"]),
+//                        Text(today[index]["money"]),
+//                      ],
+//                    ),
+//                  )),
+//            ),
+//          );
+//        });
+
+//    return ListView.builder(
+//      itemCount: data.length,
+//      itemBuilder: (context, index) {
+//        print('' + data.length.toString());
+//        if (data.length == 0) {
+//          print('hi');
+//          return Center(
+//              child: Text(
+//            '항목을 추가해주세요!!',
+//            textScaleFactor: 1.5,
+//            style: TextStyle(color: Colors.grey),
+//          ));
+//        }
+//
+//        final title = data[index]['title'];
+//        final money = data[index]['money'];
+//
+//        print('!!!!checkehck $title, $money');
+//
+//        return Card(
+//          elevation: 14,
+//          shape:
+//              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+//          child: Padding(
+//            padding: EdgeInsets.only(
+//              left: 5,
+//              right: 5,
+//            ),
+//            child: ListTile(
+//              onLongPress: () {
+//                Provider.of<Money>(context).removeTodayList(index);
+//              },
+//              title: Text(
+//                title,
+//                style: TextStyle(fontWeight: FontWeight.bold),
+//                textScaleFactor: 1.2,
+//              ),
+//              trailing: Text(
+//                formatter.format(int.parse(money)),
+//                style: TextStyle(fontWeight: FontWeight.bold),
+//                textScaleFactor: 1.2,
+//              ),
+//            ),
+//          ),
+//        );
+//      },
+//    );
+  }
+
+  void _save(String newTitle, int newMoney) async {
+    updateListView();
+    int nextId = await databaseHelper.nextId();
+    print('nextId111111 : $nextId');
+    if (nextId == null) {
+      nextId = 1;
+    } else {
+      nextId += 1;
+    }
+
+    String date = DateFormat('yyyyMMdd').format(DateTime.now());
+    Money money = new Money(nextId, newTitle, newMoney, date);
+
+    print('money : $money');
+
+    int result = await databaseHelper.insertMoney(money);
+    print('result : $result');
+
+    if (result != 0) {
+//      _showAlertDialog('성공', '정상저장');
+      updateListView();
+    } else {
+//      _showAlertDialog('실패', '실패!');
+    }
+  }
+
+  void _showAlertDialog(String title, String message) {
+    AlertDialog alertDialog = AlertDialog(
+      title: Text(title),
+      content: Text(message),
     );
+
+    showDialog(context: context, builder: (_) => alertDialog);
+  }
+
+  void _delete(BuildContext context, Money money) async {
+    int result = await databaseHelper.deleteMoney(money.id);
+    if (result != 0) {
+      _showSnackBar(context, '삭제되었습니다.');
+      updateListView();
+    }
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    final snackBar = SnackBar(content: Text(message));
+    Scaffold.of(context).showSnackBar(snackBar);
+  }
+
+  void updateListView() {
+    final Future<Database> dbFuture = databaseHelper.initDatabase();
+    dbFuture.then((database) {
+      Future<List<Money>> moneyListFuture = databaseHelper.getMoneyList();
+
+      moneyListFuture.then((moneyList) {
+        setState(() {
+          this.moneyList = moneyList;
+          this.count = moneyList.length;
+        });
+      });
+    });
   }
 
   _fieldFocusChange(

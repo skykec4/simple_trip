@@ -1,56 +1,86 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:myapp/models/money.dart';
+import 'package:myapp/utils/database_helper.dart';
+import 'package:sqflite/sqflite.dart';
 
-class Result extends StatelessWidget {
+class Result extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Text('hi'),
-        Image.asset('assets/nation_flag_loading2.gif',width: 100,height: 100,),
-//        Container(
-//          child: Center(child: ChangeRaisedButtonColor()),
-//        ),
-      ],
-    );
-  }
+  _ResultState createState() => _ResultState();
 }
 
+class _ResultState extends State<Result> {
 
-class ChangeRaisedButtonColor extends StatefulWidget {
-  @override
-  ChangeRaisedButtonColorState createState() => ChangeRaisedButtonColorState();
-}
 
-class ChangeRaisedButtonColorState extends State<ChangeRaisedButtonColor>
-    with SingleTickerProviderStateMixin {
-  AnimationController _animationController;
-  Animation _colorTween;
-
-  @override
-  void initState() {
-    _animationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 100));
-    _colorTween = ColorTween(begin: Colors.red, end: Colors.green)
-        .animate(_animationController);
-
-    super.initState();
-  }
+  DatabaseHelper databaseHelper = DatabaseHelper();
+  List<Money> moneyList;
+  int count = 0;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _colorTween,
-      builder: (context, child) => RaisedButton(
-        child: Text("Change my color"),
-        color: _colorTween.value,
-        onPressed: () {
-          if (_animationController.status == AnimationStatus.completed) {
-            _animationController.reverse();
-          } else {
-            _animationController.forward();
-          }
-        },
-      ),
+
+    if (moneyList == null) {
+      moneyList = List<Money>();
+      updateListView();
+    }
+
+    print('나와봐라 ! $moneyList');
+
+    var list2 = ['a','b'];
+
+    return ListView.builder(
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            children: <Widget>[
+              Text(
+                moneyList[index].date,
+              ),
+              ListView.builder(
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: EdgeInsets.only(top: 8.0),
+                    child: Text('Nested list item ${list2}index'),
+                  );
+                },
+                itemCount: 2, // this is a hardcoded value
+              ),
+            ],
+          ),
+        );
+      },
+      itemCount: moneyList.length, // this is a hardcoded value
     );
+  }
+
+  void _delete(BuildContext context, Money money) async {
+    int result = await databaseHelper.deleteMoney(money.id);
+    if (result != 0) {
+      _showSnackBar(context, '삭제되었습니다.');
+      updateListView();
+    }
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    final snackBar = SnackBar(content: Text(message));
+    Scaffold.of(context).showSnackBar(snackBar);
+  }
+  void updateListView(){
+    final Future<Database> dbFuture = databaseHelper.initDatabase();
+    dbFuture.then((database){
+      Future<List<Money>> moneyListFuture = databaseHelper.getMoneyList();
+
+      moneyListFuture.then((moneyList){
+        setState(() {
+          this.moneyList = moneyList;
+          this.count = moneyList.length;
+        });
+
+      });
+    });
+
+
+
   }
 }

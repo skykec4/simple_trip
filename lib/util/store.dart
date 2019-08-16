@@ -4,6 +4,44 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:localstorage/localstorage.dart';
 
 class Money with ChangeNotifier {
+  var storage;
+  var _today;
+  var _totalList;
+
+  Money(this._today, this.storage);
+
+  get getToday => _today;
+
+  get totalList => _totalList;
+
+  void setToday(Map todayList) {
+    if (_today == null) {
+      _today = [todayList];
+    } else {
+      _today.add(todayList);
+    }
+print('들어가버렸! $_today');
+
+    notifyListeners();
+    setLocalStorageToday(_today);
+    printt();
+  }
+
+  void setLocalStorageToday(todayList) {
+
+    var _today = storage.getItem("use_money");
+
+    _today[nowNoDash] = todayList;
+
+
+    print('저장끝');
+    printt();
+  }
+
+  void printt() {
+    var _today = storage.getItem("use_money");
+    print('_today _today _today2222  :::: $_today');
+  }
 
   int total = 0;
 
@@ -11,9 +49,7 @@ class Money with ChangeNotifier {
   var todayList = [];
   int todayTotalMoney = 0;
   var now = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-  //총합
-  var totalList = [];
+  var nowNoDash = DateFormat('yyyyMMdd').format(DateTime.now());
 
   //세팅
 
@@ -35,8 +71,8 @@ class Money with ChangeNotifier {
     setDataToday();
     notifyListeners();
   }
-  void removeTodayList(int index){
 
+  void removeTodayList(int index) {
     todayTotalMoney -= todayList[index]['money'];
 
     todayList.removeAt(index);

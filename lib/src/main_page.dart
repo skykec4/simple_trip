@@ -5,6 +5,7 @@ import 'setting.dart';
 import 'exchange_rate.dart';
 
 class MainPage extends StatefulWidget {
+
   @override
   _MainPageState createState() => _MainPageState();
 }

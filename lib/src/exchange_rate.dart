@@ -25,16 +25,16 @@ class Rate {
 //  Rate({this.result, this.cur_unit, this.ttb, this.tts, this.deal_bas_r, this.bkpr, this.yy_efee_r, this.ten_dd_efee_r, this.kftc_bkpr, this.kftc_deal_bas_r, this.lcur_nm});
   Rate(
       {this.result,
-        this.cur_unit,
-        this.ttb,
-        this.tts,
-        this.deal_bas_r,
-        this.bkpr,
-        this.yy_efee_r,
-        this.ten_dd_efee_r,
-        this.kftc_bkpr,
-        this.kftc_deal_bas_r,
-        this.cur_nm});
+      this.cur_unit,
+      this.ttb,
+      this.tts,
+      this.deal_bas_r,
+      this.bkpr,
+      this.yy_efee_r,
+      this.ten_dd_efee_r,
+      this.kftc_bkpr,
+      this.kftc_deal_bas_r,
+      this.cur_nm});
 
   factory Rate.fromJson(Map<String, dynamic> json) {
     return Rate(
@@ -57,9 +57,10 @@ Future<List<Rate>> fetchPhotos() async {
   var now = new DateTime.now();
 
   String year = now.year.toString();
-  String month = now.month.toString().length ==1 ? "0"+now.month.toString() :now.month.toString();
-  String day = now.day.toString();
-
+  String month = now.month.toString().length == 1
+      ? "0" + now.month.toString()
+      : now.month.toString();
+  String day = (now.day == 1 ? now.day : now.day - 1).toString();
 
   final response = await http.post(
       'https://www.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey=nHpyy6i0GGVLJeExq4ZrZnf13tWQ89Lk&searchdate=$year$month$day&data=AP01',
@@ -79,7 +80,6 @@ List<Rate> parsePhotos(String responseBody) {
 }
 
 class ExchangeRate extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -92,24 +92,19 @@ class ExchangeRate extends StatelessWidget {
             return snapshot.hasData
                 ? PhotosList(photos: snapshot.data)
                 : Center(child: CircularProgressIndicator());
-
           }),
     );
   }
 }
 
-String returnUrl(String nation){
-
+String returnUrl(String nation) {
   var url = 'https://www.countryflags.io/$nation/shiny/64.png';
 
   return url;
 }
 
 class PhotosList extends StatelessWidget {
-
   final List<Rate> photos;
-
-
 
   List unit = [
     "AED",
@@ -163,7 +158,7 @@ class PhotosList extends StatelessWidget {
 
   Map nationName = {
     "AE": '아랍에미리트',
-    "AU" : '호주',
+    "AU": '호주',
     "BH": '바레인',
     "CA": '캐나다',
     "CH": '스위스',
@@ -193,35 +188,39 @@ class PhotosList extends StatelessWidget {
     return ListView.builder(
         itemCount: photos.length,
         itemBuilder: (context, index) {
-
-          var flags = int.parse(unit.indexOf(photos[index].cur_unit).toString());
+          var flags =
+              int.parse(unit.indexOf(photos[index].cur_unit).toString());
           return Container(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50)),
-                    elevation: 10,
-                    child: Column(
-                      children: <Widget>[
-                        ListTile(
-                          leading:
-                          FadeInImage.assetNetwork(width: 50,height: 50,placeholder: 'assets/nation_flag_loading2.gif', image: returnUrl(nation[flags])),
-                          title: Text("${nationName[nation[flags]]} (${photos[index].cur_nm.split(" ").length == 1 ?photos[index].cur_nm :photos[index].cur_nm.split(" ")[1]})"),
-                          subtitle: Text("${photos[index].cur_unit}"),
-                          trailing: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              children: <Widget>[
-                                Text(" ${photos[index].cur_unit} : 1"),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Text(" KRW : ${photos[index].deal_bas_r}")
-                              ],
+            padding: const EdgeInsets.all(8.0),
+            child: Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50)),
+                elevation: 10,
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      leading: FadeInImage.assetNetwork(
+                          width: 50,
+                          height: 50,
+                          placeholder: 'assets/nation_flag_loading2.gif',
+                          image: returnUrl(nation[flags])),
+                      title: Text(
+                          "${nationName[nation[flags]]} (${photos[index].cur_nm.split(" ").length == 1 ? photos[index].cur_nm : photos[index].cur_nm.split(" ")[1]})"),
+                      subtitle: Text("${photos[index].cur_unit}"),
+                      trailing: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: <Widget>[
+                            Text(" ${photos[index].cur_unit} : 1"),
+                            SizedBox(
+                              height: 5,
                             ),
-                          ),
+                            Text(" KRW : ${photos[index].deal_bas_r}")
+                          ],
                         ),
+                      ),
+                    ),
 //                        Text("통화코드 : "+photos[index].cur_unit.toString()),
 //                        Text("국가 + 통화코드명"+photos[index].cur_nm.toString()),
 //                        Text("송금 받으실 때 : "+photos[index].ttb.toString()),
@@ -232,9 +231,9 @@ class PhotosList extends StatelessWidget {
 //                        Text("10일 환거료율 : " + photos[index].ten_dd_efee_r.toString()),
 //                        Text("서울외국환중계 매매기준율"+photos[index].kftc_deal_bas_r.toString()),
 //                        Text("서울외국환중계 장부가격" + photos[index].kftc_bkpr.toString()),
-                      ],
-                    )),
-              ));
+                  ],
+                )),
+          ));
         });
 
     return GridView.builder(
