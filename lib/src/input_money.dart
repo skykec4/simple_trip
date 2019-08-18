@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 
 //import 'package:myapp/util/store.dart';
 import 'package:provider/provider.dart';
-import 'package:localstorage/localstorage.dart';
+//import 'package:localstorage/localstorage.dart';
 
 import 'dart:async';
 import 'package:myapp/models/money.dart';
@@ -21,6 +21,8 @@ class _InputMoneyState extends State<InputMoney> {
   int count = 0;
 
   final _formKey = GlobalKey<FormState>();
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey();
+
   TextEditingController _title = TextEditingController();
   TextEditingController _money = TextEditingController();
   var formatter = new NumberFormat("#,###");
@@ -29,7 +31,7 @@ class _InputMoneyState extends State<InputMoney> {
   final FocusNode _moneyFocus = FocusNode();
 
   //localStorage
-  final LocalStorage storage = new LocalStorage('trip');
+//  final LocalStorage storage = new LocalStorage('trip');
 
 //  var now = DateTime.now();
 
@@ -212,7 +214,7 @@ class _InputMoneyState extends State<InputMoney> {
 //                                          .setToday(list);
                                       _save(
                                           _title.text, int.parse(_money.text));
-
+//                                      _addAnItem();
                                       _title.text = '';
                                       _money.text = '';
 
@@ -245,6 +247,13 @@ class _InputMoneyState extends State<InputMoney> {
     print("moneyList :::: $moneyList");
 //    var today = Provider.of<Money>(context).getToday;
 
+//    return AnimatedList(
+//      key: _listKey,
+//      initialItemCount: moneyList.length,
+//      itemBuilder: (context, index, animation) => _buildItem(context, moneyList[index], animation),
+//    );
+
+
     return ListView.builder(
         itemCount: moneyList.length,
         itemBuilder: (context, index) {
@@ -274,83 +283,45 @@ class _InputMoneyState extends State<InputMoney> {
             ),
           );
         });
-
-//    return ListView.builder(
-//        itemCount: today.length,
-//        itemBuilder: (context, index) {
-//          return SizedBox(
-//            height: MediaQuery.of(context).size.height * 0.1,
-//            child: GestureDetector(
-//              onLongPress: () {},
-//              child: Card(
-//                  shape: RoundedRectangleBorder(
-//                      borderRadius: BorderRadius.circular(25)),
-//                  child: Padding(
-//                    padding: EdgeInsets.only(
-//                        top: 10,
-//                        left: MediaQuery.of(context).size.width * 0.05,
-//                        right: MediaQuery.of(context).size.width * 0.05,
-//                        bottom: 10),
-//                    child: Row(
-//                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                      children: <Widget>[
-//                        Text(today[index]["title"]),
-//                        Text(today[index]["money"]),
-//                      ],
-//                    ),
-//                  )),
-//            ),
-//          );
-//        });
-
-//    return ListView.builder(
-//      itemCount: data.length,
-//      itemBuilder: (context, index) {
-//        print('' + data.length.toString());
-//        if (data.length == 0) {
-//          print('hi');
-//          return Center(
-//              child: Text(
-//            '항목을 추가해주세요!!',
-//            textScaleFactor: 1.5,
-//            style: TextStyle(color: Colors.grey),
-//          ));
-//        }
-//
-//        final title = data[index]['title'];
-//        final money = data[index]['money'];
-//
-//        print('!!!!checkehck $title, $money');
-//
-//        return Card(
-//          elevation: 14,
-//          shape:
-//              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-//          child: Padding(
-//            padding: EdgeInsets.only(
-//              left: 5,
-//              right: 5,
-//            ),
-//            child: ListTile(
-//              onLongPress: () {
-//                Provider.of<Money>(context).removeTodayList(index);
-//              },
-//              title: Text(
-//                title,
-//                style: TextStyle(fontWeight: FontWeight.bold),
-//                textScaleFactor: 1.2,
-//              ),
-//              trailing: Text(
-//                formatter.format(int.parse(money)),
-//                style: TextStyle(fontWeight: FontWeight.bold),
-//                textScaleFactor: 1.2,
-//              ),
-//            ),
-//          ),
-//        );
-//      },
-//    );
   }
+
+  Widget _buildItem(BuildContext context, Money item, Animation animation) {
+    TextStyle textStyle = new TextStyle(fontSize: 20);
+
+    return Padding(
+      padding: const EdgeInsets.all(2.0),
+      child: SizeTransition(
+        sizeFactor: animation,
+        axis: Axis.vertical,
+        child: SizedBox(
+          height: 50.0,
+          child: Card(
+            child: Center(
+              child: Text(item.title, style: textStyle),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  void _addAnItem() {
+
+    final Future<Database> dbFuture = databaseHelper.initDatabase();
+    dbFuture.then((database) {
+      Future<List<Money>> moneyListFuture = databaseHelper.getMoneyList();
+
+      moneyListFuture.then((moneyList) {
+        setState(() {
+          this.moneyList = moneyList;
+          this.count = moneyList.length;
+        });
+      });
+    });
+
+    moneyList.insert(0, moneyList[0]);
+    _listKey.currentState.insertItem(0);
+  }
+
 
   void _save(String newTitle, int newMoney) async {
     updateListView();
@@ -363,7 +334,7 @@ class _InputMoneyState extends State<InputMoney> {
     }
 
     String date = DateFormat('yyyyMMdd').format(DateTime.now());
-    Money money = new Money(nextId, newTitle, newMoney, date);
+    Money money = new Money(newTitle, newMoney, date);
 
     print('money : $money');
 
@@ -403,7 +374,7 @@ class _InputMoneyState extends State<InputMoney> {
   void updateListView() {
     final Future<Database> dbFuture = databaseHelper.initDatabase();
     dbFuture.then((database) {
-      Future<List<Money>> moneyListFuture = databaseHelper.getMoneyList();
+      Future<List<Money>> moneyListFuture = databaseHelper.getTodayList();
 
       moneyListFuture.then((moneyList) {
         setState(() {

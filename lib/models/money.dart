@@ -6,7 +6,7 @@ class Money {
 
 //  Money(this._title, this._money, this._date);
 
-  Money(this._id, this._title, this._money, this._date);
+  Money(this._title, this._money, this._date);
 
   int get id => _id;
 

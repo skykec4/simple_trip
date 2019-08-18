@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:async';
 import 'dart:io';
@@ -88,7 +89,6 @@ class DatabaseHelper {
     int count = moneyMapList.length;
 
     List<Money> moneyList = List<Money>();
-
     for (int i = 0; i < count; i++) {
       moneyList.add(Money.fromMapObject(moneyMapList[i]));
     }
@@ -105,5 +105,75 @@ class DatabaseHelper {
 
     return result;
 
+  }
+
+  Future<List<Map<String, dynamic>>> getDateAndTotalMapList() async {
+    Database db = await this.database;
+
+//    var result = await db.rawQuery('SELECT * FROM $moneyTable');
+    var result = await db.rawQuery('SELECT $colDate, SUM($colMoney) AS money FROM $moneyTable GROUP BY $colDate');
+//    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
+//    print('resultresultresultresult :  $result');
+    return result;
+  }
+
+  Future<List<Money>> getDateAndTotal() async {
+    var dateAndTotalMapList = await getDateAndTotalMapList();
+    int count = dateAndTotalMapList.length;
+
+    List<Money> moneyList = List<Money>();
+
+//    print('chechkec : $dateAndTotalMapList');
+
+    for (int i = 0; i < count; i++) {
+      moneyList.add(Money.fromMapObject(dateAndTotalMapList[i]));
+    }
+
+    return moneyList;
+  }
+
+  Future<List<Map<String, dynamic>>> getTodayMapList() async {
+    Database db = await this.database;
+
+//    var result = await db.rawQuery('SELECT * FROM $moneyTable ORDER BY $colDate ASC');
+    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
+    return result;
+  }
+
+  Future<List<Money>> getTodayList() async {
+
+    Database db = await this.database;
+//    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
+    String _today = DateFormat('yyyyMMdd').format(DateTime.now());
+
+    var moneyMapList = await db.rawQuery('SELECT * FROM $moneyTable WHERE $colDate = $_today ORDER BY $colDate ASC');
+
+//    var moneyMapList = await getMoneyMapList();
+    int count = moneyMapList.length;
+
+    List<Money> moneyList = List<Money>();
+    for (int i = 0; i < count; i++) {
+      moneyList.add(Money.fromMapObject(moneyMapList[i]));
+    }
+
+    return moneyList;
+  }
+
+  Future<List<Money>> getDayList(String date) async {
+
+    Database db = await this.database;
+//    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
+
+    var moneyMapList = await db.rawQuery('SELECT * FROM $moneyTable WHERE $colDate = $date ORDER BY $colId ASC');
+
+//    var moneyMapList = await getMoneyMapList();
+    int count = moneyMapList.length;
+
+    List<Money> moneyList = List<Money>();
+    for (int i = 0; i < count; i++) {
+      moneyList.add(Money.fromMapObject(moneyMapList[i]));
+    }
+
+    return moneyList;
   }
 }
