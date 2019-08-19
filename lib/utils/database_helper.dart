@@ -107,13 +107,17 @@ class DatabaseHelper {
 
   }
 
+  //전체에서 날짜별 총 사용한 돈
   Future<List<Map<String, dynamic>>> getDateAndTotalMapList() async {
     Database db = await this.database;
 
 //    var result = await db.rawQuery('SELECT * FROM $moneyTable');
-    var result = await db.rawQuery('SELECT $colDate, SUM($colMoney) AS money FROM $moneyTable GROUP BY $colDate');
+    var result = await db.rawQuery(
+//        'SELECT $colDate, SUM($colMoney) AS money FROM $moneyTable GROUP BY $colDate'
+        'SELECT $colDate, SUM($colMoney) AS money, (SELECT SUM($colMoney) FROM $moneyTable) AS total FROM $moneyTable GROUP BY $colDate'
+    );
 //    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
-//    print('resultresultresultresult :  $result');
+
     return result;
   }
 
@@ -123,7 +127,7 @@ class DatabaseHelper {
 
     List<Money> moneyList = List<Money>();
 
-//    print('chechkec : $dateAndTotalMapList');
+
 
     for (int i = 0; i < count; i++) {
       moneyList.add(Money.fromMapObject(dateAndTotalMapList[i]));
@@ -146,7 +150,7 @@ class DatabaseHelper {
 //    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
     String _today = DateFormat('yyyyMMdd').format(DateTime.now());
 
-    var moneyMapList = await db.rawQuery('SELECT * FROM $moneyTable WHERE $colDate = $_today ORDER BY $colDate ASC');
+    var moneyMapList = await db.rawQuery('SELECT $colId,$colTitle,$colMoney,$colDate,(SELECT SUM($colMoney) FROM $moneyTable WHERE $colDate = $_today ) as total FROM $moneyTable WHERE $colDate = $_today ORDER BY $colDate ASC');
 
 //    var moneyMapList = await getMoneyMapList();
     int count = moneyMapList.length;
@@ -165,6 +169,7 @@ class DatabaseHelper {
 //    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
 
     var moneyMapList = await db.rawQuery('SELECT * FROM $moneyTable WHERE $colDate = $date ORDER BY $colId ASC');
+
 
 //    var moneyMapList = await getMoneyMapList();
     int count = moneyMapList.length;

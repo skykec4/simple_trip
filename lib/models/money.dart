@@ -3,6 +3,7 @@ class Money {
   String _title;
   int _money;
   String _date;
+  int _total;
 
 //  Money(this._title, this._money, this._date);
 
@@ -15,6 +16,8 @@ class Money {
   int get money => _money;
 
   String get date => _date;
+
+  int get total => _total;
 
   set title(String newTitle) {
     if (newTitle.length <= 255) {
@@ -37,6 +40,12 @@ class Money {
     map['money'] = _money;
     map['date'] = _date;
 
+    if(total != null){
+      map['total'] = _total;
+    }
+
+
+
     return map;
   }
 
@@ -45,5 +54,6 @@ class Money {
     this._title = map['title'];
     this._money = map['money'];
     this._date = map['date'];
+    this._total = map['total'];
   }
 }

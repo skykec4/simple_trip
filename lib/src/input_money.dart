@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-//import 'package:myapp/util/store.dart';
-import 'package:provider/provider.dart';
-//import 'package:localstorage/localstorage.dart';
-
 import 'dart:async';
 import 'package:myapp/models/money.dart';
 import 'package:myapp/utils/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:myapp/utils/integer_format.dart';
 
 class InputMoney extends StatefulWidget {
   @override
@@ -18,44 +14,26 @@ class InputMoney extends StatefulWidget {
 class _InputMoneyState extends State<InputMoney> {
   DatabaseHelper databaseHelper = DatabaseHelper();
   List<Money> moneyList;
-  int count = 0;
+  int moneyListLength = 0;
+  int total = 0;
+  IntegerFormat formatter = new IntegerFormat();
 
   final _formKey = GlobalKey<FormState>();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
 
   TextEditingController _title = TextEditingController();
   TextEditingController _money = TextEditingController();
-  var formatter = new NumberFormat("#,###");
 
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _moneyFocus = FocusNode();
 
-  //localStorage
-//  final LocalStorage storage = new LocalStorage('trip');
-
-//  var now = DateTime.now();
-
-  var today = DateTime.now().year.toString() +
-      (DateTime.now().month.toString().length == 1
-          ? "0" + DateTime.now().month.toString()
-          : DateTime.now().month.toString()) +
-      (DateTime.now().day.toString().length == 1
-          ? "0" + DateTime.now().day.toString()
-          : DateTime.now().day.toString());
-
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-//    var getData = storage.getItem("use_money");
-//    print(getData);
+
     if (moneyList == null) {
       moneyList = List<Money>();
       updateListView();
-    }
-    int total = 0;
-
-    for (int i = 0; i < moneyList.length; i++) {
-      total = total + moneyList[i].money;
     }
 
     return Container(
@@ -86,31 +64,21 @@ class _InputMoneyState extends State<InputMoney> {
                             children: <Widget>[
                               Text(DateFormat('yyyy-MM-dd')
                                   .format(DateTime.now())),
-//                              Text(
-//                                Provider.of<Money>(context, listen: true)
-//                                    .getNow
-//                                    .toString(),
-//                                textScaleFactor: 1.5,
-//                                style: TextStyle(
-//                                    color: Colors.black54,
-//                                    fontWeight: FontWeight.bold),
-//                              ),
                               Container(
                                   child: Row(
                                 children: <Widget>[
                                   Text(
-                                    '총합 : ',
+                                    '오늘 지출 : ',
                                     textScaleFactor: 1.2,
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black54),
                                   ),
-                                  Text(total.toString())
-//                                  Text(
-//                                    formatter.format(Provider.of<Money>(context)
-//                                        .getTodayTotalMoney),
-//                                    textScaleFactor: 1.4,
-//                                  )
+                                  Text(formatter.getFormat(total),
+                                      textScaleFactor: 1.2,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54))
                                 ],
                               ))
                             ],
@@ -210,11 +178,9 @@ class _InputMoneyState extends State<InputMoney> {
                                         'title': _title.text,
                                         'money': _money.text
                                       };
-//                                      Provider.of<Money>(context)
-//                                          .setToday(list);
+
                                       _save(
                                           _title.text, int.parse(_money.text));
-//                                      _addAnItem();
                                       _title.text = '';
                                       _money.text = '';
 
@@ -244,18 +210,15 @@ class _InputMoneyState extends State<InputMoney> {
     if (moneyList == null) {
       moneyList = List<Money>();
     }
-    print("moneyList :::: $moneyList");
-//    var today = Provider.of<Money>(context).getToday;
 
-//    return AnimatedList(
-//      key: _listKey,
-//      initialItemCount: moneyList.length,
-//      itemBuilder: (context, index, animation) => _buildItem(context, moneyList[index], animation),
-//    );
-
+    if(moneyListLength == 0){
+      return Center(
+        child: Text('지출 내역을 써보세요~'),
+      );
+    }
 
     return ListView.builder(
-        itemCount: moneyList.length,
+        itemCount: moneyListLength,
         itemBuilder: (context, index) {
           return SizedBox(
             height: MediaQuery.of(context).size.height * 0.1,
@@ -276,7 +239,7 @@ class _InputMoneyState extends State<InputMoney> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
                         Text(moneyList[index].title),
-                        Text(moneyList[index].money.toString()),
+                        Text(formatter.getFormat(moneyList[index].money)),
                       ],
                     ),
                   )),
@@ -304,8 +267,8 @@ class _InputMoneyState extends State<InputMoney> {
       ),
     );
   }
-  void _addAnItem() {
 
+  void _addAnItem() {
     final Future<Database> dbFuture = databaseHelper.initDatabase();
     dbFuture.then((database) {
       Future<List<Money>> moneyListFuture = databaseHelper.getMoneyList();
@@ -313,7 +276,7 @@ class _InputMoneyState extends State<InputMoney> {
       moneyListFuture.then((moneyList) {
         setState(() {
           this.moneyList = moneyList;
-          this.count = moneyList.length;
+          this.moneyListLength = moneyList.length;
         });
       });
     });
@@ -322,11 +285,9 @@ class _InputMoneyState extends State<InputMoney> {
     _listKey.currentState.insertItem(0);
   }
 
-
   void _save(String newTitle, int newMoney) async {
     updateListView();
     int nextId = await databaseHelper.nextId();
-    print('nextId111111 : $nextId');
     if (nextId == null) {
       nextId = 1;
     } else {
@@ -336,10 +297,7 @@ class _InputMoneyState extends State<InputMoney> {
     String date = DateFormat('yyyyMMdd').format(DateTime.now());
     Money money = new Money(newTitle, newMoney, date);
 
-    print('money : $money');
-
     int result = await databaseHelper.insertMoney(money);
-    print('result : $result');
 
     if (result != 0) {
 //      _showAlertDialog('성공', '정상저장');
@@ -379,7 +337,10 @@ class _InputMoneyState extends State<InputMoney> {
       moneyListFuture.then((moneyList) {
         setState(() {
           this.moneyList = moneyList;
-          this.count = moneyList.length;
+          this.moneyListLength = moneyList.length;
+          if (moneyList.length != 0) {
+            this.total = moneyList[0].total;
+          }
         });
       });
     });

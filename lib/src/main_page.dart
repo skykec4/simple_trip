@@ -6,7 +6,6 @@ import 'setting.dart';
 import 'exchange_rate.dart';
 
 class MainPage extends StatefulWidget {
-
   @override
   _MainPageState createState() => _MainPageState();
 }
@@ -15,13 +14,14 @@ class _MainPageState extends State<MainPage> {
   int _index = 0;
 
   var _list = [InputMoney(), Result(), ExchangeRate(), Setting()];
+  var _titleList = ['오늘 지출', '전체 지출', '환율', '세팅'];
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
-        title: Text('너의 쓴돈은?'),
+        title: Text(_titleList[_index]),
         centerTitle: true,
         actions: <Widget>[
           Container(
@@ -57,19 +57,19 @@ class _MainPageState extends State<MainPage> {
 //            BottomNavigationBarItem(
 //                icon: Icon(Icons.settings), title: Text('세팅')),
 //          ]),
-    bottomNavigationBar: FancyBottomNavigation(
-      tabs: [
-        TabData(iconData: Icons.input, title: "오늘쓴돈"),
-        TabData(iconData: Icons.receipt, title: "쓴돈들"),
-        TabData(iconData: Icons.monetization_on, title: "환율"),
-        TabData(iconData: Icons.settings, title: "세팅")
-      ],
-      onTabChangedListener: (position) {
-        setState(() {
-          _index = position;
-        });
-      },
-    ),
+      bottomNavigationBar: FancyBottomNavigation(
+        tabs: [
+          TabData(iconData: Icons.input, title: "오늘쓴돈"),
+          TabData(iconData: Icons.receipt, title: "쓴돈들"),
+          TabData(iconData: Icons.monetization_on, title: "환율"),
+          TabData(iconData: Icons.settings, title: "세팅")
+        ],
+        onTabChangedListener: (position) {
+          setState(() {
+            _index = position;
+          });
+        },
+      ),
     );
   }
 }
