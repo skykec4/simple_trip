@@ -296,6 +296,7 @@ class _InputMoneyState extends State<InputMoney> {
 
     String date = DateFormat('yyyyMMdd').format(DateTime.now());
     Money money = new Money(newTitle, newMoney, date);
+//    Money money = new Money('test1', 150, '20190811');
 
     int result = await databaseHelper.insertMoney(money);
 

@@ -37,66 +37,72 @@ class _ResultState extends State<Result> {
       return Center(child: Text('돈을 써보세요!'));
     }
 
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: EdgeInsets.only(top: 10, left: 30, bottom: 5),
-          child: Container(
-            alignment: Alignment.topLeft,
-            child: Text(
-              '총 지출 : $total',
-              textScaleFactor: 1.5,
-              style:
-                  TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-            ),
-          ),
-        ),
-        ListView.builder(
-          itemCount: count, // this is a hardcoded value
-          shrinkWrap: true,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: EdgeInsets.only(
-                top: 3,
-                left: 10,
-                right: 10,
-              ),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                elevation: 15,
-                child: ExpansionTile(
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-//                  Text(moneyList[index].total),
-                      Text(
-                        dateFormat(moneyList[index].date),
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                      Text(
-                        formatter.getFormat(moneyList[index].money),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.black54),
-                      )
-                    ],
-                  ),
-                  children: <Widget>[
-                    Column(
-                      children: <Widget>[
-                        Divider(
-                          color: Colors.black54,
-                        ),
-                        DayList(moneyList[index].date)
-                      ],
-                    ),
-                  ],
+    return Container(
+      child: SingleChildScrollView(
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.only(top: 10, left: 30, bottom: 5),
+              child: Container(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  '총 지출 : $total',
+                  textScaleFactor: 1.5,
+                  style:
+                      TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
                 ),
               ),
-            );
-          },
+            ),
+            ListView.builder(
+              itemCount: count, // this is a hardcoded value
+              shrinkWrap: true,
+              primary: true,
+              physics: ScrollPhysics(),
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    top: 3,
+                    left: 10,
+                    right: 10,
+                  ),
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    elevation: 10,
+                    child: ExpansionTile(
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+//                  Text(moneyList[index].total),
+                          Text(
+                            dateFormat(moneyList[index].date),
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                          Text(
+                            formatter.getFormat(moneyList[index].money),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, color: Colors.black54),
+                          )
+                        ],
+                      ),
+                      children: <Widget>[
+                        Column(
+                          children: <Widget>[
+                            Divider(
+                              color: Colors.black54,
+                            ),
+                            DayList(moneyList[index].date)
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -175,24 +181,28 @@ class _DayListState extends State<DayList> {
       listDetail = getTodayListView(widget.date);
     }
 
-    return Padding(
-        padding: EdgeInsets.only(left: 10, right: 10, bottom: 5),
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: EdgeInsets.only(left: 10, right: 10, bottom: 5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Text(listDetail[index].title),
-                  Text(formatter.getFormat(listDetail[index].money))
-                ],
-              ),
-            );
-          },
-        ));
+    return Container(
+      child: Padding(
+          padding: EdgeInsets.only(left: 10, right: 10, bottom: 5),
+          child: ListView.builder(
+            primary: true,
+            physics: AlwaysScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: EdgeInsets.only(left: 10, right: 10, bottom: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(listDetail[index].title),
+                    Text(formatter.getFormat(listDetail[index].money))
+                  ],
+                ),
+              );
+            },
+          )),
+    );
   }
 
   List getTodayListView(String date) {
