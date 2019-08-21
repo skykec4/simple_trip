@@ -65,22 +65,14 @@ class _InputMoneyState extends State<InputMoney> {
                               Text(DateFormat('yyyy-MM-dd')
                                   .format(DateTime.now())),
                               Container(
-                                  child: Row(
-                                children: <Widget>[
-                                  Text(
-                                    '오늘 지출 : ',
-                                    textScaleFactor: 1.2,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black54),
-                                  ),
-                                  Text(formatter.getFormat(total),
-                                      textScaleFactor: 1.2,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black54))
-                                ],
-                              ))
+                                child: Text(
+                                  '오늘 지출 : ${formatter.getFormat(total)} (${formatter.getFormat(total * 39)}원)',
+                                  textScaleFactor: 1.2,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black54),
+                                ),
+                              )
                             ],
                           ),
                         ),
@@ -211,7 +203,7 @@ class _InputMoneyState extends State<InputMoney> {
       moneyList = List<Money>();
     }
 
-    if(moneyListLength == 0){
+    if (moneyListLength == 0) {
       return Center(
         child: Text('지출 내역을 써보세요~'),
       );
@@ -341,6 +333,8 @@ class _InputMoneyState extends State<InputMoney> {
           this.moneyListLength = moneyList.length;
           if (moneyList.length != 0) {
             this.total = moneyList[0].total;
+          }else{
+            this.total = 0;
           }
         });
       });

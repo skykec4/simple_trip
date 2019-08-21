@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:myapp/models/money.dart';
 import 'package:myapp/utils/database_helper.dart';
 import 'package:myapp/utils/integer_format.dart';
 import 'package:sqflite/sqflite.dart';
 
-//var formatter = new NumberFormat("#,###");
-//
-//String getFormatMoney(String money) {
-//  return formatter.format(money);
-//}
 
 IntegerFormat formatter = new IntegerFormat();
 
@@ -38,70 +32,74 @@ class _ResultState extends State<Result> {
     }
 
     return Container(
-      child: SingleChildScrollView(
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.only(top: 10, left: 30, bottom: 5),
-              child: Container(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  '총 지출 : $total',
-                  textScaleFactor: 1.5,
-                  style:
-                      TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-                ),
+      child: Column(
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(top: 10, left: 30, bottom: 5),
+            child: Container(
+              alignment: Alignment.topLeft,
+              child: Text(
+                '총 지출 : ${formatter.getFormat(total)} bat ( ${formatter.getFormat(total * 39)}원)',
+                textScaleFactor: 1.5,
+                style:
+                TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
               ),
             ),
-            ListView.builder(
-              itemCount: count, // this is a hardcoded value
-              shrinkWrap: true,
+          ),
+          Expanded(
+            child: SingleChildScrollView(
               primary: true,
               physics: ScrollPhysics(),
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    top: 3,
-                    left: 10,
-                    right: 10,
-                  ),
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    elevation: 10,
-                    child: ExpansionTile(
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-//                  Text(moneyList[index].total),
-                          Text(
-                            dateFormat(moneyList[index].date),
-                            style: TextStyle(color: Colors.black54),
-                          ),
-                          Text(
-                            formatter.getFormat(moneyList[index].money),
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, color: Colors.black54),
-                          )
-                        ],
-                      ),
-                      children: <Widget>[
-                        Column(
+              child: ListView.builder(
+                itemCount: count, // this is a hardcoded value
+                shrinkWrap: true,
+                primary: true,
+                physics: ScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      top: 3,
+                      left: 10,
+                      right: 10,
+                    ),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      elevation: 10,
+                      child: ExpansionTile(
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
-                            Divider(
-                              color: Colors.black54,
+//                  Text(moneyList[index].total),
+                            Text(
+                              dateFormat(moneyList[index].date),
+                              style: TextStyle(color: Colors.black54),
                             ),
-                            DayList(moneyList[index].date)
+                            Text(
+                              formatter.getFormat(moneyList[index].money),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, color: Colors.black54),
+                            )
                           ],
                         ),
-                      ],
+                        children: <Widget>[
+                          Column(
+                            children: <Widget>[
+                              Divider(
+                                color: Colors.black54,
+                              ),
+                              DayList(moneyList[index].date)
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
