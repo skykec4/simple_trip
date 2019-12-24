@@ -1,4 +1,3 @@
-import 'package:fancy_bottom_navigation/fancy_bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/models/money.dart';
 import 'package:myapp/utils/database_helper.dart';
@@ -19,7 +18,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _index = 0;
 
-  var _list = [InputMoney(), Result(), ExchangeRate(), Setting()];
+  var _list = [InputMoney(), Result(), ExchangeRateUI(), Setting()];
   var _titleList = ['오늘 지출', '전체 지출', '환율', '세팅'];
 
   String _selected = '태국';
@@ -63,7 +62,7 @@ class _MainPageState extends State<MainPage> {
                       children: <Widget>[
                         ListTile(
                           title: Text('태국'),
-                          trailing: Text('${formatter.getFormat(total)}'),
+                          trailing: Text('${IntegerFormat.getFormat(total)}'),
                           selected: _selected == '태국' ? true : false,
                           onTap: () {
                             updateListView();
@@ -102,19 +101,19 @@ class _MainPageState extends State<MainPage> {
       appBar: AppBar(
         title: Text(_titleList[_index]),
         centerTitle: true,
-        actions: <Widget>[
-          Container(
-            child: Padding(
-              padding: EdgeInsets.all(size.width * 0.025),
-              child: FloatingActionButton(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.lightBlue,
-                  elevation: 20,
-                  child: Icon(Icons.autorenew),
-                  onPressed: () {}),
-            ),
-          ),
-        ],
+//        actions: <Widget>[
+//          Container(
+//            child: Padding(
+//              padding: EdgeInsets.all(size.width * 0.025),
+//              child: FloatingActionButton(
+//                  foregroundColor: Colors.white,
+//                  backgroundColor: Colors.lightBlue,
+//                  elevation: 20,
+//                  child: Icon(Icons.autorenew),
+//                  onPressed: () {}),
+//            ),
+//          ),
+//        ],
 //        leading: Icon(Icons.monetization_on),
       ),
       body: _list[_index],
@@ -135,19 +134,6 @@ class _MainPageState extends State<MainPage> {
             BottomNavigationBarItem(
                 icon: Icon(Icons.settings), title: Text('세팅')),
           ]),
-//      bottomNavigationBar: FancyBottomNavigation(
-//        tabs: [
-//          TabData(iconData: Icons.input, title: "오늘쓴돈"),
-//          TabData(iconData: Icons.receipt, title: "쓴돈들"),
-//          TabData(iconData: Icons.monetization_on, title: "환율"),
-//          TabData(iconData: Icons.settings, title: "세팅")
-//        ],
-//        onTabChangedListener: (position) {
-//          setState(() {
-//            _index = position;
-//          });
-//        },
-//      ),
     );
   }
 

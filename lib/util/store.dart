@@ -1,112 +1,44 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:localstorage/localstorage.dart';
+import 'package:myapp/models/exchange_rate.dart';
 
-class Money with ChangeNotifier {
-  var storage;
-  var _today;
-  var _totalList;
+class Store with ChangeNotifier {
+  String _currentNation = '미국';
+  String _targetNation = '한국';
 
-  Money(this._today, this.storage);
+  List<Map<String, dynamic>> _currentNationMap = [];
+  List<Map<String, dynamic>> _targetNationMap = [];
 
-  get getToday => _today;
+  get getCurrentNation => _currentNation;
+  get getCurrentNationMap => _currentNationMap;
 
-  get totalList => _totalList;
+  get getTargetNation => _targetNation;
+  get getTargetNationMap => _targetNationMap;
 
-  void setToday(Map todayList) {
-    if (_today == null) {
-      _today = [todayList];
-    } else {
-      _today.add(todayList);
-    }
-print('들어가버렸! $_today');
-
-    notifyListeners();
-    setLocalStorageToday(_today);
-    printt();
-  }
-
-  void setLocalStorageToday(todayList) {
-
-    var _today = storage.getItem("use_money");
-
-    _today[nowNoDash] = todayList;
-
-
-    print('저장끝');
-    printt();
-  }
-
-  void printt() {
-    var _today = storage.getItem("use_money");
-    print('_today _today _today2222  :::: $_today');
-  }
-
-  int total = 0;
-
-  //오늘날짜
-  var todayList = [];
-  int todayTotalMoney = 0;
-  var now = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  var nowNoDash = DateFormat('yyyyMMdd').format(DateTime.now());
-
-  //세팅
-
-  //메소드
-  //오늘
-  get getNow => now; //날짜
-  get getTodayTotalMoney => todayTotalMoney; //총합
-  get getTodayList => todayList;
-
-  void setTodayTotalMoney(int useMoney) {
-    todayTotalMoney += useMoney;
+  void setCurrentNation(String nationName) {
+    _currentNation = nationName;
     notifyListeners();
   }
 
-  void setTodayList(String title, String money) {
-    final list = {'title': title, 'money': money};
-    todayList.add(list);
-    todayTotalMoney += int.parse(money);
-    setDataToday();
+  void setTargetNation(String nationName) {
+    _targetNation = nationName;
+    notifyListeners();
+  }
+  void setCurrentNationMap(List<Map<String, dynamic>> list) {
+    _currentNationMap = list;
     notifyListeners();
   }
 
-  void removeTodayList(int index) {
-    todayTotalMoney -= todayList[index]['money'];
-
-    todayList.removeAt(index);
-
+  void setTargetNationMap(List<Map<String, dynamic>> list) {
+    _targetNationMap = list;
     notifyListeners();
   }
 
-//총합
-
-//세팅
-  setDataToday() async {
-    print('!!!!!!!!!!!');
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    print('@@@@@@@@@@@@@');
-    await prefs.setStringList('today', todayList);
-
-    print('################');
-    final list = prefs.get('today');
-    print(list.toString());
+  void setNationList(List<Map<String, dynamic>> list1,List<Map<String, dynamic>> list2){
+    _currentNationMap = list1;
+    _targetNationMap = list2;
+    notifyListeners();
   }
-
-/*
-  --save
-
-  final prefs = await SharedPreferences.getInstance();
-  prefs.setInt('counter', counter);
-  */
-
-/*
-  --get
-    final prefs = await SharedPreferences.getInstance();
-    final counter = prefs.getInt('counter') ?? 0;
-  */
-
 }
 
 class UseMoney {

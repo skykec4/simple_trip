@@ -16,7 +16,6 @@ class _InputMoneyState extends State<InputMoney> {
   List<Money> moneyList;
   int moneyListLength = 0;
   int total = 0;
-  IntegerFormat formatter = new IntegerFormat();
 
   final _formKey = GlobalKey<FormState>();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
@@ -27,6 +26,10 @@ class _InputMoneyState extends State<InputMoney> {
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _moneyFocus = FocusNode();
 
+//  String _date = DateFormat('yyyyMMdd').format(DateTime.now());
+  DateTime _date = DateTime.now();
+  bool _tap = true;
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -34,6 +37,28 @@ class _InputMoneyState extends State<InputMoney> {
     if (moneyList == null) {
       moneyList = List<Money>();
       updateListView();
+    }
+    Future selectDate() async {
+      DateTime picked = await showDatePicker(
+        context: context,
+        locale: const Locale('ko', 'KO'),
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2017),
+        lastDate: DateTime(2030),
+        builder: (BuildContext context, Widget child) {
+          return Theme(
+            data: ThemeData.dark(),
+            child: child,
+          );
+        },
+      );
+      print('picked: $picked');
+      if (picked != null && picked != _date) {
+        setState(() => _date = picked);
+        updateListView();
+
+        return picked.toString().substring(0, 10);
+      }
     }
 
     return Container(
@@ -62,11 +87,55 @@ class _InputMoneyState extends State<InputMoney> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
-                              Text(DateFormat('yyyy-MM-dd')
-                                  .format(DateTime.now())),
+                              GestureDetector(
+                                  onTapUp: (TapUpDetails details) {
+                                    setState(() {
+                                      _tap = true;
+                                    });
+                                  },
+                                  onTapDown: (TapDownDetails details) {
+                                    setState(() {
+                                      _tap = false;
+                                    });
+                                  },
+                                  onTap: () {
+                                    selectDate();
+                                    /*
+                                    DatePicker.showDatePicker(context,
+                                        showTitleActions: true,
+                                        minTime: DateTime(2017, 1, 1),
+                                        maxTime: DateTime(2030, 12, 31),
+                                        onChanged: (date) {
+                                      print('change $date');
+                                    }, onConfirm: (date) {
+                                      print('confirm $date');
+                                      setState(() {
+                                        _date =
+                                            DateFormat('yyyyMMdd').format(date);
+                                      });
+                                      updateListView();
+                                    },
+                                        currentTime: DateTime.parse(_date),
+//                                        DateFormat('yyyy-MM-dd hh:nn:mm:ss').format(_date),
+//                                        DateTime.now(),
+                                        locale: LocaleType.ko);
+
+                                     */
+                                  },
+                                  child: Text(
+//                                    DateFormat("yyyy-MM-dd")
+//                                        .format(DateTime.parse(_date)),
+                                    DateFormat('yyyy-MM-dd').format(_date),
+//                                    _date.toString(),
+                                    textScaleFactor: 1.2,
+                                    style: TextStyle(
+                                        color: _tap
+                                            ? Colors.blue
+                                            : Colors.black26),
+                                  )),
                               Container(
                                 child: Text(
-                                  '오늘 지출 : ${formatter.getFormat(total)} (${formatter.getFormat(total * 39)}원)',
+                                  '오늘 지출 : ${IntegerFormat.getFormat(total)} (${IntegerFormat.getFormat(total * 39)}원)',
                                   textScaleFactor: 1.2,
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -124,8 +193,7 @@ class _InputMoneyState extends State<InputMoney> {
                                       context, _titleFocus, _moneyFocus);
                                 },
                                 decoration: InputDecoration(
-                                    icon: Icon(Icons.title),
-                                    hintText: "사용한 내용"),
+                                    icon: Icon(Icons.title), hintText: "내용"),
                                 validator: (value) {
                                   if (value.isEmpty) {
                                     return '제목을 입력하세요!';
@@ -231,7 +299,8 @@ class _InputMoneyState extends State<InputMoney> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
                         Text(moneyList[index].title),
-                        Text(formatter.getFormat(moneyList[index].money)),
+                        Text(
+                            '${IntegerFormat.getFormat(moneyList[index].money)} (${(IntegerFormat.getFormat(moneyList[index].money * 39))})'),
                       ],
                     ),
                   )),
@@ -240,62 +309,20 @@ class _InputMoneyState extends State<InputMoney> {
         });
   }
 
-  Widget _buildItem(BuildContext context, Money item, Animation animation) {
-    TextStyle textStyle = new TextStyle(fontSize: 20);
-
-    return Padding(
-      padding: const EdgeInsets.all(2.0),
-      child: SizeTransition(
-        sizeFactor: animation,
-        axis: Axis.vertical,
-        child: SizedBox(
-          height: 50.0,
-          child: Card(
-            child: Center(
-              child: Text(item.title, style: textStyle),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _addAnItem() {
-    final Future<Database> dbFuture = databaseHelper.initDatabase();
-    dbFuture.then((database) {
-      Future<List<Money>> moneyListFuture = databaseHelper.getMoneyList();
-
-      moneyListFuture.then((moneyList) {
-        setState(() {
-          this.moneyList = moneyList;
-          this.moneyListLength = moneyList.length;
-        });
-      });
-    });
-
-    moneyList.insert(0, moneyList[0]);
-    _listKey.currentState.insertItem(0);
-  }
-
   void _save(String newTitle, int newMoney) async {
     updateListView();
-    int nextId = await databaseHelper.nextId();
-    if (nextId == null) {
-      nextId = 1;
-    } else {
-      nextId += 1;
-    }
 
-    String date = DateFormat('yyyyMMdd').format(DateTime.now());
-    Money money = new Money(newTitle, newMoney, date);
-//    Money money = new Money('test1', 150, '20190811');
+    Money money =
+        new Money('test',newTitle, newMoney, DateFormat('yyyyMMdd').format(_date));
 
     int result = await databaseHelper.insertMoney(money);
 
     if (result != 0) {
+      print('성공');
 //      _showAlertDialog('성공', '정상저장');
       updateListView();
     } else {
+      print('실패');
 //      _showAlertDialog('실패', '실패!');
     }
   }
@@ -325,7 +352,8 @@ class _InputMoneyState extends State<InputMoney> {
   void updateListView() {
     final Future<Database> dbFuture = databaseHelper.initDatabase();
     dbFuture.then((database) {
-      Future<List<Money>> moneyListFuture = databaseHelper.getTodayList();
+      Future<List<Money>> moneyListFuture =
+          databaseHelper.getTodayList(DateFormat('yyyyMMdd').format(_date));
 
       moneyListFuture.then((moneyList) {
         setState(() {
@@ -333,7 +361,7 @@ class _InputMoneyState extends State<InputMoney> {
           this.moneyListLength = moneyList.length;
           if (moneyList.length != 0) {
             this.total = moneyList[0].total;
-          }else{
+          } else {
             this.total = 0;
           }
         });

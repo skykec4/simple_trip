@@ -1,99 +1,212 @@
-import 'package:flutter/material.dart';
-//import 'package:http/http.dart';
-
-import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
-
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:myapp/api/api.dart';
+import 'package:myapp/models/exchange_rate.dart';
+import 'package:myapp/models/rate.dart';
+import 'package:myapp/util/store.dart';
+import 'package:myapp/utils/database_helper.dart';
+import 'package:myapp/utils/integer_format.dart';
+import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
-class Rate {
-  final result;
-  final cur_unit;
-  final ttb;
-  final tts;
-  final deal_bas_r;
-  final bkpr;
-  final yy_efee_r;
-  final ten_dd_efee_r;
-  final kftc_bkpr;
-  final kftc_deal_bas_r;
-  final cur_nm;
+class ExchangeRateUI extends StatefulWidget {
+  @override
+  _ExchangeRateUIState createState() => _ExchangeRateUIState();
+}
 
-//  Rate({this.result, this.cur_unit, this.ttb, this.tts, this.deal_bas_r, this.bkpr, this.yy_efee_r, this.ten_dd_efee_r, this.kftc_bkpr, this.kftc_deal_bas_r, this.lcur_nm});
-  Rate(
-      {this.result,
-      this.cur_unit,
-      this.ttb,
-      this.tts,
-      this.deal_bas_r,
-      this.bkpr,
-      this.yy_efee_r,
-      this.ten_dd_efee_r,
-      this.kftc_bkpr,
-      this.kftc_deal_bas_r,
-      this.cur_nm});
+class _ExchangeRateUIState extends State<ExchangeRateUI> {
+  DatabaseHelper databaseHelper = DatabaseHelper();
+  List<ExChangeRate> exChangeList;
 
-  factory Rate.fromJson(Map<String, dynamic> json) {
-    return Rate(
-      result: json['result'],
-      cur_unit: json['cur_unit'],
-      ttb: json['ttb'],
-      tts: json['tts'],
-      deal_bas_r: json['deal_bas_r'],
-      bkpr: json['bkpr'],
-      yy_efee_r: json['yy_efee_r'],
-      ten_dd_efee_r: json['ten_dd_efee_r'],
-      kftc_bkpr: json['kftc_bkpr'],
-      kftc_deal_bas_r: json['kftc_deal_bas_r'],
-      cur_nm: json['cur_nm'],
-    );
+  @override
+  void initState() {
+    super.initState();
+    updateListView();
   }
-}
 
-Future<List<Rate>> fetchPhotos() async {
-  var now = new DateTime.now();
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
-  String year = now.year.toString();
-  String month = now.month.toString().length == 1
-      ? "0" + now.month.toString()
-      : now.month.toString();
-  String day = (now.day == 1 ? now.day : now.day - 1).toString();
+  void updateListView() async {
+    final Future<Database> dbFuture = databaseHelper.initDatabase();
+    dbFuture.then((database) {
+      Future<List<ExChangeRate>> moneyListFuture =
+          databaseHelper.getRecentExchangeRate();
+      String today = DateFormat('yyyyMMdd').format(DateTime.now().toLocal());
+      List today2 = DateFormat('yyyyMMdd/Hmm/EEE')
+          .format(DateTime.now().toLocal())
+          .split('/');
 
-  final response = await http.post(
-      'https://www.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey=nHpyy6i0GGVLJeExq4ZrZnf13tWQ89Lk&searchdate=$year$month$day&data=AP01',
-      headers: {
-        HttpHeaders.contentTypeHeader: 'application/json;',
+      moneyListFuture.then((exChangeRateList) {
+        print('exChangeRateList : ${exChangeRateList.length}');
+//        print('exChangeRateList : ${exChangeRateList[0].getExColId}');
+//        print('exChangeRateList : ${exChangeRateList[0].getExRateDate}');
+//        print('exChangeRateList1 : ${exChangeRateList[0].getExCurUnit}');
+//        print('exChangeRateList : ${exChangeRateList[0].getExCurNm}');
+//        print('exChangeRateList : ${exChangeRateList[0].getExDealBasR}');
+//        print('exChangeRateList :$today || ${exChangeRateList[0].getExRateDate}');
+
+//        print('exChangeRateList1 : ${exChangeRateList[0].getExCurUnit}');
+//        print('exChangeRateList2 : ${exChangeRateList[1].getExCurUnit}');
+//        print('exChangeRateList2 : ${exChangeRateList[2].getExCurUnit}');
+        if (exChangeRateList.length == 0 ||
+            (today2[0] != exChangeRateList[0].getExRateDate &&
+                int.parse(today2[1]) > 1100 &&
+                (today2[2] != "Sat" || today2[2] != "Sun"))) {
+          print('새로받아오쥬?');
+          String date;
+          bool check = false;
+
+          for (var i = 0; i < 7; i++) {
+            String today = DateFormat('yyyyMMdd')
+                .format(DateTime.now().toLocal().add(Duration(days: -i)));
+            String dayHour = DateFormat('Hmm')
+                .format(DateTime.now().toLocal().add(Duration(days: -i)));
+            String dayName = DateFormat('EEE')
+                .format(DateTime.now().toLocal().add(Duration(days: -i)));
+
+            if (dayName == 'Sat' || dayName == 'Sun') {
+            } else if (!check && int.parse(dayHour) < 1105) {
+              check = true;
+            } else {
+              date = today;
+              break;
+            }
+          }
+
+          if (date != null) {
+            Api.fetchPhotos(date).then((list) {
+              List<Rate> rate = list;
+              List<ExChangeRate> _exChangeRateList = [];
+
+              for (var i = 0; i < rate.length; i++) {
+                print('rateList : ${rate[i]}');
+                _save(date, rate[i].cur_unit, rate[i].cur_nm, rate[i].ttb,
+                    rate[i].tts, rate[i].deal_bas_r);
+                _exChangeRateList.add(ExChangeRate(
+                    date,
+                    rate[i].cur_unit,
+                    rate[i].cur_nm,
+                    rate[i].ttb,
+                    rate[i].tts,
+                    rate[i].deal_bas_r));
+
+                if (rate[i].cur_unit == 'USD' || rate[i].cur_unit == 'KRW') {
+                  List<Map<String, dynamic>> list = [
+                    {
+                      'rate_date': date,
+                      'cur_unit': rate[i].cur_unit,
+                      'cur_name': rate[i].cur_nm,
+                      'ttb': rate[i].ttb,
+                      'tts': rate[i].tts,
+                      'deal_bas_r': rate[i].deal_bas_r
+                    }
+                  ];
+
+                  if (rate[i].cur_unit == "USD") {
+                    Provider.of<Store>(context).setCurrentNationMap(list);
+                  } else {
+                    Provider.of<Store>(context).setTargetNationMap(list);
+                  }
+                }
+              }
+
+              databaseHelper.deleteExChangeRate(date);
+              setState(() => exChangeList = _exChangeRateList);
+            });
+          }
+        } else {
+          print('원래 있쮸?');
+          setState(() => exChangeList = exChangeRateList);
+
+          if (Provider.of<Store>(context).getCurrentNationMap.length == 0) {
+            databaseHelper.getNationExchangeRate('USD').then((res) {
+              Provider.of<Store>(context).setCurrentNationMap(res);
+            });
+          }
+
+          if (Provider.of<Store>(context).getTargetNationMap.length == 0) {
+            databaseHelper.getNationExchangeRate('KRW').then((res) {
+              Provider.of<Store>(context).setTargetNationMap(res);
+            });
+          }
+        }
       });
+    });
+  }
 
-  print('response.body : ${utf8.decode(response.bodyBytes).toString()}');
-  // Use the compute function to run parsePhotos in a separate isolate.
-  return compute(parsePhotos, utf8.decode(response.bodyBytes));
-}
+  void _save(String date, String curUnit, String curNm, String ttb, String tts,
+      String dealBasR) async {
+    ExChangeRate exChangeRate =
+        new ExChangeRate(date, curUnit, curNm, ttb, tts, dealBasR);
 
-List<Rate> parsePhotos(String responseBody) {
-  final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
+//    Money money = new Money('test1', 150, '20190811');
 
-  return parsed.map<Rate>((json) => Rate.fromJson(json)).toList();
-}
+    int result = await databaseHelper.insertExChangeRate(exChangeRate);
 
-class ExchangeRate extends StatelessWidget {
+    if (result != 0) {
+      print('성공');
+    } else {
+      print('실패');
+    }
+  }
+
+//  void updateCurrentNation(String unit) {
+//    final Future<Database> dbFuture = databaseHelper.initDatabase();
+//    dbFuture.then((database) {
+//      Future<List<Map<String, dynamic>>> cur =
+//          databaseHelper.getNationExchangeRate(unit);
+//
+//      cur.then((res) {
+//        Provider.of<Store>(context).setCurrentNationMap(res);
+//      });
+//    });
+//  }
+//  void updateTargetNation(String unit) {
+//    final Future<Database> dbFuture = databaseHelper.initDatabase();
+//    dbFuture.then((database) {
+//      Future<List<Map<String, dynamic>>> target =
+//      databaseHelper.getNationExchangeRate(unit);
+//
+//      target.then((res) {
+//        Provider.of<Store>(context).setTargetNationMap(res);
+//      });
+//    });
+//  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: FutureBuilder<List<Rate>>(
-          future: fetchPhotos(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              print('엥?' + snapshot.error);
-            }
-            return snapshot.hasData
-                ? PhotosList(photos: snapshot.data)
-                : Center(child: CircularProgressIndicator());
-          }),
-    );
+//    if (exChangeList == null) {
+//      updateListView();
+//    }
+//    print('exChangeList : $exChangeList');
+
+    if (exChangeList == null) {
+      return Center(child: CircularProgressIndicator());
+    } else if (Provider.of<Store>(context).getCurrentNationMap.length == 0) {
+      return Center(child: CircularProgressIndicator());
+    } else {
+      return PhotosList(photos: exChangeList);
+    }
+
+//    return Center(
+//      child: FutureBuilder<List<Rate>>(
+//          future: Api.fetchPhotos(),
+//          builder: (context, snapshot) {
+//            if (snapshot.hasError) {
+//              print('엥?' + snapshot.error);
+//            }
+//            return snapshot.hasData
+//                ? PhotosList(photos: snapshot.data)
+//                : Center(child: CircularProgressIndicator());
+//          }),
+//    );
   }
 }
 
@@ -103,13 +216,21 @@ String returnUrl(String nation) {
   return url;
 }
 
-class PhotosList extends StatelessWidget {
-  final List<Rate> photos;
+class PhotosList extends StatefulWidget {
+  final List<ExChangeRate> photos;
 
+  PhotosList({Key key, this.photos}) : super(key: key);
+
+  @override
+  _PhotosListState createState() => _PhotosListState();
+}
+
+class _PhotosListState extends State<PhotosList> {
   List unit = [
     "AED",
     "AUD",
     "BHD",
+    "BND",
     "CAD",
     "CHF",
     "CNH",
@@ -135,6 +256,7 @@ class PhotosList extends StatelessWidget {
     "AE",
     "AU",
     "BH",
+    "BN",
     "CA",
     "CH",
     "CN",
@@ -160,6 +282,7 @@ class PhotosList extends StatelessWidget {
     "AE": '아랍에미리트',
     "AU": '호주',
     "BH": '바레인',
+    "BN": '브루나이',
     "CA": '캐나다',
     "CH": '스위스',
     "CN": '중국',
@@ -168,8 +291,8 @@ class PhotosList extends StatelessWidget {
     "GB": '영국',
     "HK": '홍콩',
     "ID": '인도네시아',
-    "JP": '원숭이',
-    "KR": '한국짱!',
+    "JP": '일본',
+    "KR": '한국',
     "KW": '쿠웨이트',
     "MY": '말레이시아',
     "NO": '노르웨이',
@@ -180,103 +303,453 @@ class PhotosList extends StatelessWidget {
     "TH": '태국',
     "US": '미국'
   };
+  List nationList = [
+    '아랍에미리트',
+    '호주',
+    '바레인',
+    '브루나이',
+    '캐나다',
+    '스위스',
+    '중국',
+    '덴마크',
+    '유로',
+    '영국',
+    '홍콩',
+    '인도네시아',
+    '일본',
+    '한국',
+    '쿠웨이트',
+    '말레이시아',
+    '노르웨이',
+    '뉴질랜드',
+    '사우디',
+    '스웨덴',
+    '싱가포르',
+    '태국',
+    '미국'
+  ];
 
-  PhotosList({Key key, this.photos}) : super(key: key);
+  List typeList = ['송금 받을때', '송금 보낼때', '매매기준율'];
+
+  String type = '매매기준율';
+  TextEditingController _current = TextEditingController();
+
+  TextEditingController _target = TextEditingController();
+
+  String _cur = '';
+  DatabaseHelper databaseHelper = DatabaseHelper();
+
+  void updateCurrentNation(String nation) async {
+    final Future<Database> dbFuture = databaseHelper.initDatabase();
+    dbFuture.then((database) {
+      Future<List<Map<String, dynamic>>> cur = databaseHelper
+          .getNationExchangeRate(unit[nationList.indexOf(nation)]);
+
+      cur.then((res) {
+        Provider.of<Store>(context).setCurrentNationMap(res);
+        updateCurrentToTargetAmount(res[0]['deal_bas_r'].replaceAll(',', ''));
+      });
+    });
+  }
+
+  void updateTargetNation(String nation) async {
+    final Future<Database> dbFuture = databaseHelper.initDatabase();
+    dbFuture.then((database) {
+      Future<List<Map<String, dynamic>>> target = databaseHelper
+          .getNationExchangeRate(unit[nationList.indexOf(nation)]);
+
+      target.then((res) {
+        Provider.of<Store>(context).setTargetNationMap(res);
+        updateCurrentToTargetAmount(res[0]['deal_bas_r'].replaceAll(',', ''));
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _current.dispose();
+    _target.dispose();
+  }
+
+  String stringToDateFormat(String date) {
+    return '${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6)}';
+  }
+
+  void updateCurrentToTargetAmount(String amount) {
+    var current = double.parse(Provider.of<Store>(context)
+        .getCurrentNationMap[0]['deal_bas_r']
+        .replaceAll(',', ''));
+    var target = double.parse(Provider.of<Store>(context)
+        .getTargetNationMap[0]['deal_bas_r']
+        .replaceAll(',', ''));
+
+    int _currentAdd = Provider.of<Store>(context)
+                .getCurrentNationMap[0]['cur_unit']
+                .indexOf('100') <
+            0
+        ? 1
+        : 100;
+    int _targetAdd = Provider.of<Store>(context)
+                .getTargetNationMap[0]['cur_unit']
+                .indexOf('100') <
+            0
+        ? 1
+        : 100;
+    if (_current.text.indexOf("-") > -1) {
+      setState(() => _current.text = _current.text.replaceAll('-', ''));
+    } else if (_current.text != '') {
+      setState(() => _target.text = (double.parse(_current.text) *
+              (((current / _currentAdd) / (target) * _targetAdd)))
+          .toStringAsFixed(2));
+    } else {
+      setState(() => _target.clear());
+    }
+  }
+
+  void updateTargetToCurrentAmount(String amount) {
+    var current = double.parse(Provider.of<Store>(context)
+        .getCurrentNationMap[0]['deal_bas_r']
+        .replaceAll(',', ''));
+    var target = double.parse(Provider.of<Store>(context)
+        .getTargetNationMap[0]['deal_bas_r']
+        .replaceAll(',', ''));
+
+    int _currentAdd = Provider.of<Store>(context)
+                .getCurrentNationMap[0]['cur_unit']
+                .indexOf('100') <
+            0
+        ? 1
+        : 100;
+    int _targetAdd = Provider.of<Store>(context)
+                .getTargetNationMap[0]['cur_unit']
+                .indexOf('100') <
+            0
+        ? 1
+        : 100;
+
+    if (_target.text.indexOf("-") > -1) {
+      setState(() => _target.text = _target.text.replaceAll('-', ''));
+    } else if (_target.text != '') {
+      setState(() => _current.text = (double.parse(amount) *
+              (((target / _targetAdd) / (current) * _currentAdd)))
+          .toStringAsFixed(2));
+    } else {
+      setState(() => _current.clear());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-        itemCount: photos.length,
-        itemBuilder: (context, index) {
-          var flags =
-              int.parse(unit.indexOf(photos[index].cur_unit).toString());
-          return Container(
-              child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50)),
-                elevation: 10,
-                child: Column(
-                  children: <Widget>[
-                    ListTile(
-                      leading: FadeInImage.assetNetwork(
-                          width: 50,
+    var width = MediaQuery.of(context).size.width;
+    var height = MediaQuery.of(context).size.height;
+    var provider = Provider.of<Store>(context);
+
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).requestFocus(new FocusNode());
+      },
+      child: DefaultTabController(
+        length: 2,
+        child: Column(
+          children: <Widget>[
+            TabBar(
+              onTap: (tap) {
+                FocusScope.of(context).requestFocus(new FocusNode());
+              },
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.grey,
+              tabs: <Widget>[
+                Tab(text: '환율조회'),
+                Tab(text: '전체환율'),
+              ],
+            ),
+            Flexible(
+              child: TabBarView(
+                children: <Widget>[
+                  SingleChildScrollView(
+                    child: Container(
+                      child: Column(children: <Widget>[
+                        SizedBox(
                           height: 50,
-                          placeholder: 'assets/nation_flag_loading2.gif',
-                          image: returnUrl(nation[flags])),
-                      title: Text(
-                          "${nationName[nation[flags]]} (${photos[index].cur_nm.split(" ").length == 1 ? photos[index].cur_nm : photos[index].cur_nm.split(" ")[1]})"),
-                      subtitle: Text("${photos[index].cur_unit}"),
-                      trailing: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(20)),
+                              border: Border.all(color: Colors.grey[400])),
+                          width: width * 0.85,
+                          height: 180,
+                          child: Column(
+                            children: <Widget>[
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54.withOpacity(.1),
+                                  borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(20),
+                                      topRight: Radius.circular(20)),
+                                ),
+                                height: 50,
+                                padding: EdgeInsets.only(left: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: <Widget>[
+                                    FadeInImage.assetNetwork(
+                                        width: 35,
+                                        placeholder:
+                                            'assets/nation_flag_loading2.gif',
+                                        image: returnUrl(nation[
+                                            nationList.indexOf(
+                                                provider.getCurrentNation)])),
+                                    SizedBox(
+                                      width: 30,
+                                    ),
+                                    Container(
+                                      child: DropdownButton<String>(
+                                        isDense: true,
+                                        focusColor: Colors.white,
+                                        elevation: 30,
+                                        value: provider.getCurrentNation,
+                                        onChanged: (value) {
+                                          provider.setCurrentNation(value);
+                                          updateCurrentNation(value);
+                                        },
+                                        items: nationList
+                                            .map<DropdownMenuItem<String>>(
+                                                (value) {
+                                          return DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Container(
+                                                width: width * 0.3,
+                                                child: Text(
+                                                  value,
+                                                )),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 20),
+                                child: TextField(
+                                  textAlign: TextAlign.right,
+                                  controller: _current,
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    updateCurrentToTargetAmount(value);
+                                  },
+                                ),
+                              ),
+                              Flexible(
+                                child: Container(
+                                  padding: EdgeInsets.only(right: 20),
+                                  alignment: Alignment.centerRight,
+                                  child: _current.text != ''
+                                      ? Text(
+                                          '${_current.text} ${provider.getCurrentNationMap[0]["cur_name"].split(' ').length == 1 ? provider.getCurrentNationMap[0]["cur_name"].split(' ')[0] : provider.getCurrentNationMap[0]["cur_name"].split(' ')[1]} (${provider.getCurrentNationMap[0]["cur_unit"].indexOf('100') < 0 ? provider.getCurrentNationMap[0]["cur_unit"] : provider.getCurrentNationMap[0]["cur_unit"].substring(0, provider.getCurrentNationMap[0]["cur_unit"].indexOf('100') - 1)})',
+                                          style:
+                                              TextStyle(color: Colors.black54),
+                                        )
+                                      : Text(''),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.pause,
+                          size: height * 0.08,
+                          color: Colors.black54.withOpacity(.5),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(20)),
+                              border: Border.all(color: Colors.grey[400])),
+                          width: width * 0.85,
+                          height: 180,
+                          child: Column(
+                            children: <Widget>[
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54.withOpacity(.1),
+                                  borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(20),
+                                      topRight: Radius.circular(20)),
+                                ),
+                                height: 50,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+//                crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    FadeInImage.assetNetwork(
+                                        width: 35,
+                                        height: 50,
+                                        placeholder:
+                                            'assets/nation_flag_loading2.gif',
+                                        image: returnUrl(nation[
+                                            nationList.indexOf(
+                                                provider.getTargetNation)])),
+                                    SizedBox(
+                                      width: 30,
+                                    ),
+                                    DropdownButton<String>(
+                                      value: provider.getTargetNation,
+                                      onChanged: (value) {
+                                        provider.setTargetNation(value);
+                                        updateTargetNation(value);
+                                      },
+                                      items: nationList
+                                          .map<DropdownMenuItem<String>>(
+                                              (value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Container(
+                                              width: width * 0.3,
+                                              child: Text(value)),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 20),
+                                child: TextField(
+                                  textAlign: TextAlign.right,
+                                  controller: _target,
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    updateTargetToCurrentAmount(value);
+                                  },
+                                ),
+                              ),
+                              Flexible(
+                                child: Container(
+                                  padding: EdgeInsets.only(right: 20),
+                                  alignment: Alignment.centerRight,
+                                  child: _target.text != ''
+                                      ? Text(
+                                          '${_target.text} ${provider.getTargetNationMap[0]["cur_name"].split(' ').length == 1 ? provider.getTargetNationMap[0]["cur_name"].split(' ')[0] : provider.getTargetNationMap[0]["cur_name"].split(' ')[1]} (${provider.getTargetNationMap[0]["cur_unit"].indexOf('100') < 0 ? provider.getTargetNationMap[0]["cur_unit"] : provider.getTargetNationMap[0]["cur_unit"].substring(0, provider.getTargetNationMap[0]["cur_unit"].indexOf('100') - 1)})',
+                                          style:
+                                              TextStyle(color: Colors.black54),
+                                        )
+                                      : Text(''),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ),
+                  Column(
+                    children: <Widget>[
+                      Container(
+                        padding: EdgeInsets.only(top: 10, left: 20, right: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: <Widget>[
-                            Text(" ${photos[index].cur_unit} : 1"),
-                            SizedBox(
-                              height: 5,
+                            Text(
+                              '기준일 : ${stringToDateFormat(widget.photos[0].getExRateDate)}',
+                              textScaleFactor: 1.3,
                             ),
-                            Text(" KRW : ${photos[index].deal_bas_r}")
+                            Container(
+                                alignment: Alignment.centerRight,
+                                child: DropdownButton(
+                                  value: type,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      type = value;
+                                    });
+                                  },
+                                  items: typeList.map((list) {
+                                    return DropdownMenuItem(
+                                        value: list, child: Text(list));
+                                  }).toList(),
+                                )),
                           ],
                         ),
                       ),
-                    ),
-//                        Text("통화코드 : "+photos[index].cur_unit.toString()),
-//                        Text("국가 + 통화코드명"+photos[index].cur_nm.toString()),
-//                        Text("송금 받으실 때 : "+photos[index].ttb.toString()),
-//                        Text("송금 보내실 때" + photos[index].tts.toString()),
-//                        Text("매매기준율 : " + photos[index].deal_bas_r.toString()),
-//                        Text("장부가격 : "+photos[index].bkpr.toString()),
-//                        Text("년환가료율 : " + photos[index].yy_efee_r.toString()),
-//                        Text("10일 환거료율 : " + photos[index].ten_dd_efee_r.toString()),
-//                        Text("서울외국환중계 매매기준율"+photos[index].kftc_deal_bas_r.toString()),
-//                        Text("서울외국환중계 장부가격" + photos[index].kftc_bkpr.toString()),
-                  ],
-                )),
-          ));
-        });
+                      Expanded(
+                        child: ListView.builder(
+                            itemCount: widget.photos.length,
+                            itemBuilder: (context, index) {
+                              var flags = int.parse(unit
+                                  .indexOf(widget.photos[index].getExCurUnit)
+                                  .toString());
 
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-      ),
-      itemCount: photos.length,
-      itemBuilder: (context, index) {
-        print('예~~~~~~~~~~~!!    ' + photos[index].toString());
-        return Text('d');
-//        return Image.network(photos[index].thumbnailUrl);
-      },
-    );
-  }
-}
-
-class An extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('An')),
-      body: Column(
-        children: <Widget>[
-          Text('An'),
-          RaisedButton(
-            child: Text('click'),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          SizedBox(
-            height: 300,
-          ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Hero(
-                tag: 'imageHero',
-                child: Icon(Icons.add),
+                              return Container(
+                                  child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Card(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(50)),
+                                    elevation: 10,
+                                    child: Column(
+                                      children: <Widget>[
+                                        ListTile(
+                                          leading: FadeInImage.assetNetwork(
+                                              width: 50,
+                                              height: 50,
+                                              placeholder:
+                                                  'assets/nation_flag_loading2.gif',
+                                              image: returnUrl(nation[flags])),
+                                          title: Text(
+                                              "${nationName[nation[flags]]} (${widget.photos[index].getExCurNm.split(" ").length == 1 ? widget.photos[index].getExCurNm : widget.photos[index].getExCurNm.split(" ")[1]})"),
+                                          subtitle: Text(
+                                              "${widget.photos[index].getExCurUnit}"),
+                                          trailing: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              children: <Widget>[
+                                                Text(
+                                                    " ${widget.photos[index].getExCurUnit} : 1"),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
+                                                Text(type == '매매기준율'
+                                                    ? " KRW : ${widget.photos[index].getExDealBasR}"
+                                                    : (type == '송금 받을때'
+                                                        ? " KRW : ${widget.photos[index].getExTTB}"
+                                                        : " KRW : ${widget.photos[index].getExTTS}"))
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    )),
+                              ));
+                            }),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(
+                          '한국수출입은행이 제공하는 환율정보입니다.\n현재 환율을 실시간으로 제공합니다.\n(비영업일의 데이터, 혹은 영업당일 11시 이전에 해당일의 데이터를 요청할 경우 null 값이 반환)',
+                          style: TextStyle(
+                              color: Colors.black54.withOpacity(.5),
+                              fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  )
+                ],
               ),
             ),
-          )
-        ],
+          ],
+        ),
       ),
     );
   }
