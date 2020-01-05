@@ -1,16 +1,27 @@
-class UserData {
-  String _userId;
+class UserDataModel {
+  int _userId;
   String _userCategory;
 
   String _userCurrentNation;
 
   String _userTargetNation;
 
-  String _userTotalMoney;
+  int _userTotalMoney;
+  String _userRegisterDate;
+//  register_date
 
-  String get userId => _userId;
+  String get userRegisterDate => _userRegisterDate;
 
-  set userId(String value) {
+  set userRegisterDate(String value) {
+    this._userRegisterDate = value;
+  }
+
+  UserDataModel(this._userCategory, this._userCurrentNation,
+      this._userTargetNation, this._userTotalMoney);
+
+  int get userId => _userId;
+
+  set userId(int value) {
     this._userId = value;
   }
 
@@ -32,9 +43,9 @@ class UserData {
     this._userTargetNation = value;
   }
 
-  String get userTotalMoney => _userTotalMoney;
+  int get userTotalMoney => _userTotalMoney;
 
-  set userTotalMoney(String value) {
+  set userTotalMoney(int value) {
     this._userTotalMoney = value;
   }
 
@@ -49,15 +60,17 @@ class UserData {
     map['current_nation'] = _userCurrentNation;
     map['target_nation'] = _userTargetNation;
     map['total_money'] = _userTotalMoney;
+    map['register_date'] = _userRegisterDate;
 
     return map;
   }
 
-  UserData.fromMapObject(Map<String, dynamic> map) {
+  UserDataModel.fromMapObject(Map<String, dynamic> map) {
     this._userId = map['id'];
     this._userCategory = map['category'];
     this._userCurrentNation = map['current_nation'];
     this._userTargetNation = map['target_nation'];
     this._userTotalMoney = map['total_money'];
+    this._userRegisterDate = map['register_date'];
   }
 }

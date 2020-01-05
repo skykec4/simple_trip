@@ -345,7 +345,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:myapp/util/store.dart';
+import 'package:myapp/utils/store.dart';
 import 'package:provider/provider.dart';
 
 // ...

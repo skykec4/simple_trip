@@ -1,8 +1,11 @@
+import 'package:firebase_admob/firebase_admob.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:myapp/models/money.dart';
-import 'package:myapp/utils/database_helper.dart';
+import 'package:myapp/db/database_helper.dart';
+import 'package:myapp/utils/store.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:myapp/utils/integer_format.dart';
 
@@ -25,41 +28,61 @@ class _InputMoneyState extends State<InputMoney> {
 
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _moneyFocus = FocusNode();
+  List<bool> isSelected = [true, false];
 
 //  String _date = DateFormat('yyyyMMdd').format(DateTime.now());
   DateTime _date = DateTime.now();
   bool _tap = true;
 
+  bool _changeRate = true;
+
+  Future<Null> selectDate() async {
+    DateTime picked = await showDatePicker(
+      context: context,
+      locale: const Locale('ko', 'KO'),
+      initialDate: _date,
+      firstDate: DateTime(2017),
+      lastDate: DateTime(2030),
+      builder: (BuildContext context, Widget child) {
+        return Theme(
+          data: ThemeData.dark(),
+          child: child,
+        );
+      },
+    );
+    print('picked: $picked');
+    if (picked != null && picked != _date) {
+      setState(() {
+        _date = picked;
+      });
+      updateListView();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    updateListView();
+  }
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
+    var provider = Provider.of<Store>(context);
 
-    if (moneyList == null) {
-      moneyList = List<Money>();
-      updateListView();
-    }
-    Future selectDate() async {
-      DateTime picked = await showDatePicker(
-        context: context,
-        locale: const Locale('ko', 'KO'),
-        initialDate: DateTime.now(),
-        firstDate: DateTime(2017),
-        lastDate: DateTime(2030),
-        builder: (BuildContext context, Widget child) {
-          return Theme(
-            data: ThemeData.dark(),
-            child: child,
-          );
-        },
-      );
-      print('picked: $picked');
-      if (picked != null && picked != _date) {
-        setState(() => _date = picked);
-        updateListView();
+//    if (moneyList == null) {
+//      moneyList = List<Money>();
+//      updateListView();
+//    }
+    FirebaseAdMob.instance
+        .initialize(appId: "ca-app-pub-5836517707450415/9866875219")
+        .then((response) {
+      myBanner
+        ..load()
+        ..show();
+    });
 
-        return picked.toString().substring(0, 10);
-      }
-    }
+    print(']]]] ${provider.userData}');
 
     return Container(
       child: Center(
@@ -100,47 +123,56 @@ class _InputMoneyState extends State<InputMoney> {
                                   },
                                   onTap: () {
                                     selectDate();
-                                    /*
-                                    DatePicker.showDatePicker(context,
-                                        showTitleActions: true,
-                                        minTime: DateTime(2017, 1, 1),
-                                        maxTime: DateTime(2030, 12, 31),
-                                        onChanged: (date) {
-                                      print('change $date');
-                                    }, onConfirm: (date) {
-                                      print('confirm $date');
-                                      setState(() {
-                                        _date =
-                                            DateFormat('yyyyMMdd').format(date);
-                                      });
-                                      updateListView();
-                                    },
-                                        currentTime: DateTime.parse(_date),
-//                                        DateFormat('yyyy-MM-dd hh:nn:mm:ss').format(_date),
-//                                        DateTime.now(),
-                                        locale: LocaleType.ko);
-
-                                     */
                                   },
                                   child: Text(
-//                                    DateFormat("yyyy-MM-dd")
-//                                        .format(DateTime.parse(_date)),
                                     DateFormat('yyyy-MM-dd').format(_date),
-//                                    _date.toString(),
                                     textScaleFactor: 1.2,
                                     style: TextStyle(
                                         color: _tap
                                             ? Colors.blue
                                             : Colors.black26),
                                   )),
-                              Container(
-                                child: Text(
-                                  '오늘 지출 : ${IntegerFormat.getFormat(total)} (${IntegerFormat.getFormat(total * 39)}원)',
-                                  textScaleFactor: 1.2,
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black54),
-                                ),
+                              Row(
+                                children: <Widget>[
+
+//                                  Text(
+//                                          '${IntegerFormat.getFormat(total)} '
+//                                          '${provider.userData['cur_nm'].split(' ').length == 1 ? provider.userData['cur_nm'] : provider.userData['cur_nm'].split(' ')[1]}',
+//                                          textScaleFactor: 1.2,
+//                                          style: TextStyle(
+//                                              fontWeight: FontWeight.bold,
+//                                              color: Colors.black54),
+//                                        ),
+//                                  _changeRate
+//                                      ? Text(
+//                                          '${IntegerFormat.getFormat(total)} '
+//                                          '${provider.userData['cur_nm'].split(' ').length == 1 ? provider.userData['cur_nm'] : provider.userData['cur_nm'].split(' ')[1]}',
+//                                          textScaleFactor: 1.2,
+//                                          style: TextStyle(
+//                                              fontWeight: FontWeight.bold,
+//                                              color: Colors.black54),
+//                                        )
+////                                  double.parse(provider.userData['cur_rate'].replaceAll(',',''))
+//                                      : Text(
+//                                          '${IntegerFormat.getFormat(total * 2)}',
+//                                          style: TextStyle(
+//                                              fontWeight: FontWeight.bold,
+//                                              color: Colors.black54)),
+                                  SizedBox(
+                                    width: 5,
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _changeRate = !_changeRate;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      Icons.autorenew,
+                                      color: Colors.blue,
+                                    ),
+                                  )
+                                ],
                               )
                             ],
                           ),
@@ -201,6 +233,9 @@ class _InputMoneyState extends State<InputMoney> {
                                   return null;
                                 },
                               ),
+                              SizedBox(
+                                height: 10,
+                              ),
                               TextFormField(
                                 controller: _money,
                                 focusNode: _moneyFocus,
@@ -219,35 +254,70 @@ class _InputMoneyState extends State<InputMoney> {
                                 height: size.height * 0.02,
                               ),
                               SizedBox(
-                                width: size.width * 0.7,
-                                height: size.height * 0.05,
-                                child: RaisedButton(
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20)),
-                                  child: Text(
-                                    '입력',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
-                                    textScaleFactor: 1.2,
-                                  ),
-                                  color: Colors.lightBlue,
-                                  onPressed: () {
-                                    if (_formKey.currentState.validate()) {
-                                      final list = {
-                                        'title': _title.text,
-                                        'money': _money.text
-                                      };
+                                height: size.height * 0.04,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: <Widget>[
+                                    ToggleButtons(
+                                      borderRadius: BorderRadius.circular(20),
+                                      children: <Widget>[
+                                        Text('현금'),
+                                        Text('카드')
+                                      ],
+                                      onPressed: (int index) {
+                                        print(index);
+                                        setState(() {
+                                          for (int buttonIndex = 0;
+                                              buttonIndex < isSelected.length;
+                                              buttonIndex++) {
+                                            if (buttonIndex == index) {
+                                              isSelected[buttonIndex] = true;
+                                            } else {
+                                              isSelected[buttonIndex] = false;
+                                            }
+                                          }
+                                        });
+                                      },
+                                      isSelected: isSelected,
+                                    ),
+                                    SizedBox(
+                                      width: 20,
+                                    ),
+                                    Expanded(
+                                      child: RaisedButton(
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20)),
+                                        child: Text(
+                                          '추가',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
+                                          textScaleFactor: 1.2,
+                                        ),
+                                        color: Colors.lightBlue,
+                                        onPressed: () {
+                                          print(provider.userData['category']);
+                                          if (_formKey.currentState
+                                              .validate()) {
+                                            _save(
+                                                provider.userData['category'],
+                                                _title.text,
+                                                int.parse(_money.text),
+                                                isSelected.indexOf(true) == 0
+                                                    ? 'cash'
+                                                    : 'card');
+                                            _title.text = '';
+                                            _money.text = '';
 
-                                      _save(
-                                          _title.text, int.parse(_money.text));
-                                      _title.text = '';
-                                      _money.text = '';
-
-                                      FocusScope.of(context)
-                                          .requestFocus(new FocusNode());
-                                    }
-                                  },
+                                            FocusScope.of(context)
+                                                .requestFocus(new FocusNode());
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               )
                             ],
@@ -309,11 +379,13 @@ class _InputMoneyState extends State<InputMoney> {
         });
   }
 
-  void _save(String newTitle, int newMoney) async {
+  void _save(
+      String category, String newTitle, int newMoney, String payment) async {
     updateListView();
 
-    Money money =
-        new Money('test',newTitle, newMoney, DateFormat('yyyyMMdd').format(_date));
+    Money money = new Money(category, newTitle, newMoney,
+        DateFormat('yyyyMMdd').format(_date), payment, DateFormat('hh:mm').format(DateTime.now().toLocal()));
+    print('ooo');
 
     int result = await databaseHelper.insertMoney(money);
 
@@ -352,8 +424,9 @@ class _InputMoneyState extends State<InputMoney> {
   void updateListView() {
     final Future<Database> dbFuture = databaseHelper.initDatabase();
     dbFuture.then((database) {
-      Future<List<Money>> moneyListFuture =
-          databaseHelper.getTodayList(DateFormat('yyyyMMdd').format(_date));
+      Future<List<Money>> moneyListFuture = databaseHelper.getTodayList(
+          DateFormat('yyyyMMdd').format(_date),
+          Provider.of<Store>(context).userData['category']);
 
       moneyListFuture.then((moneyList) {
         setState(() {
@@ -375,3 +448,39 @@ class _InputMoneyState extends State<InputMoney> {
     FocusScope.of(context).requestFocus(nextFocus);
   }
 }
+
+MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
+  keywords: <String>[
+    'trip',
+    'travle',
+    'exchange rate',
+    'rate of exchange',
+  ],
+//  contentUrl: 'https://flutter.io',
+  childDirected: false,
+  testDevices: <String>[], // Android emulators are considered test devices
+);
+
+BannerAd myBanner = BannerAd(
+  // Replace the testAdUnitId with an ad unit id from the AdMob dash.
+  // https://developers.google.com/admob/android/test-ads
+  // https://developers.google.com/admob/ios/test-ads
+  adUnitId: BannerAd.testAdUnitId,
+//  adUnitId: "ca-app-pub-5836517707450415~7623855251",
+  size: AdSize.banner,
+  targetingInfo: targetingInfo,
+  listener: (MobileAdEvent event) {
+    print("BannerAd event is $event");
+  },
+);
+
+InterstitialAd myInterstitial = InterstitialAd(
+  // Replace the testAdUnitId with an ad unit id from the AdMob dash.
+  // https://developers.google.com/admob/android/test-ads
+  // https://developers.google.com/admob/ios/test-ads
+  adUnitId: "ca-app-pub-5836517707450415~7623855251",
+  targetingInfo: targetingInfo,
+  listener: (MobileAdEvent event) {
+    print("InterstitialAd event is $event");
+  },
+);

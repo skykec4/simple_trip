@@ -6,10 +6,22 @@ class Money {
   int _money;
   String _date;
   int _total;
+  String _payment;
+  String _inputDate;
 
-//  Money(this._title, this._money, this._date);
+  String get inputDate => _inputDate;
 
-  Money(this._category, this._title, this._money, this._date);
+  set inputDate(String value) {
+    this._inputDate = value;
+  }
+
+  String get payment => _payment;
+
+  set payment(String value) {
+    this._payment = value;
+  } //  Money(this._title, this._money, this._date);
+
+  Money(this._category, this._title, this._money, this._date,this._payment,this._inputDate);
 
   int get id => _id;
 
@@ -48,7 +60,8 @@ class Money {
     map['title'] = _title;
     map['money'] = _money;
     map['date'] = _date;
-
+    map['payment'] = _payment;
+    map['input_date'] = _inputDate;
     if (total != null) {
       map['total'] = _total;
     }
@@ -63,5 +76,7 @@ class Money {
     this._money = map['money'];
     this._date = map['date'];
     this._total = map['total'];
+    this._payment = map['payment'];
+    this._inputDate = map['input_date'];
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
-import 'package:myapp/util/store.dart';
+import 'package:myapp/ui/main.dart';
+import 'package:myapp/utils/store.dart';
 import 'package:provider/provider.dart';
 import 'src/main_page.dart';
 
@@ -30,7 +31,8 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: MainPage(),
+//        home: MainPage(),
+        home: Main(),
       ),
     );
   }

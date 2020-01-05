@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/db/user_data.dart';
 import 'dart:async';
 import 'package:myapp/models/money.dart';
-import 'package:myapp/utils/database_helper.dart';
+import 'package:myapp/db/database_helper.dart';
+import 'package:myapp/utils/store.dart';
 import 'package:myapp/utils/integer_format.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 IntegerFormat formatter = new IntegerFormat();
@@ -14,10 +17,18 @@ class Result extends StatefulWidget {
 
 class _ResultState extends State<Result> {
   DatabaseHelper databaseHelper = DatabaseHelper();
+  UserDataDatabase userDb = UserDataDatabase();
   List<Money> moneyList;
   int count = 0;
 
   int total = 0;
+  int totalMoney = 0;
+
+  @override
+  void initState() {
+    getTotalMoney();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +37,6 @@ class _ResultState extends State<Result> {
       updateListView();
     }
 
-    if (total == 0) {
-      return Center(child: Text('사용한 내용을 입력하세요!'));
-    }
 
     return Container(
       child: Column(
@@ -38,7 +46,19 @@ class _ResultState extends State<Result> {
             child: Container(
               alignment: Alignment.topLeft,
               child: Text(
-                '총 금액 : 12,320 bat / 남은 금액 ${IntegerFormat.getFormat(12320 - total)} bat',
+                '총액 : $totalMoney',
+                textScaleFactor: 1.3,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.black54),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: 10, left: 30, bottom: 5),
+            child: Container(
+              alignment: Alignment.topLeft,
+              child: Text(
+                '남은 금액 ${IntegerFormat.getFormat(totalMoney - total)}',
                 textScaleFactor: 1.3,
                 style: TextStyle(
                     fontWeight: FontWeight.bold, color: Colors.black54),
@@ -168,6 +188,21 @@ class _ResultState extends State<Result> {
         '-' +
         date.substring(6, 8);
   }
+  void getTotalMoney() async{
+    final Future<Database> dbFuture = userDb.init();
+
+    dbFuture.then((database) {
+      Future<List<Map<String, dynamic>>> money = userDb.getTotalMoney(Provider.of<Store>(context, listen: false).userData['category']);
+
+      money.then((res) {
+        print('뭐시여 ? $res');
+        setState(() {
+          totalMoney = res[0]['total_money'];
+        });
+
+      });
+    });
+  }
 }
 
 class DayList extends StatefulWidget {
@@ -235,4 +270,6 @@ class _DayListState extends State<DayList> {
     });
     return currentDayList;
   }
+
+
 }

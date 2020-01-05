@@ -7,8 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:myapp/api/api.dart';
 import 'package:myapp/models/exchange_rate.dart';
 import 'package:myapp/models/rate.dart';
-import 'package:myapp/util/store.dart';
-import 'package:myapp/utils/database_helper.dart';
+import 'package:myapp/utils/store.dart';
+import 'package:myapp/db/database_helper.dart';
 import 'package:myapp/utils/integer_format.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -39,88 +39,62 @@ class _ExchangeRateUIState extends State<ExchangeRateUI> {
       Future<List<ExChangeRate>> moneyListFuture =
           databaseHelper.getRecentExchangeRate();
       String today = DateFormat('yyyyMMdd').format(DateTime.now().toLocal());
-      List today2 = DateFormat('yyyyMMdd/Hmm/EEE')
-          .format(DateTime.now().toLocal())
-          .split('/');
+//      List today2 = DateFormat('yyyyMMdd/Hmm/EEE')
+//          .format(DateTime.now().toLocal())
+//          .split('/');
 
       moneyListFuture.then((exChangeRateList) {
-        print('exChangeRateList : ${exChangeRateList.length}');
-//        print('exChangeRateList : ${exChangeRateList[0].getExColId}');
+//        print('exChangeRateList : ${exChangeRateList.length}');
 //        print('exChangeRateList : ${exChangeRateList[0].getExRateDate}');
-//        print('exChangeRateList1 : ${exChangeRateList[0].getExCurUnit}');
-//        print('exChangeRateList : ${exChangeRateList[0].getExCurNm}');
-//        print('exChangeRateList : ${exChangeRateList[0].getExDealBasR}');
-//        print('exChangeRateList :$today || ${exChangeRateList[0].getExRateDate}');
-
-//        print('exChangeRateList1 : ${exChangeRateList[0].getExCurUnit}');
-//        print('exChangeRateList2 : ${exChangeRateList[1].getExCurUnit}');
-//        print('exChangeRateList2 : ${exChangeRateList[2].getExCurUnit}');
-        if (exChangeRateList.length == 0 ||
-            (today2[0] != exChangeRateList[0].getExRateDate &&
-                int.parse(today2[1]) > 1100 &&
-                (today2[2] != "Sat" || today2[2] != "Sun"))) {
+        if (exChangeRateList.length == 0 || exChangeRateList[0].getExRateDate != today) {
           print('새로받아오쥬?');
-          String date;
-          bool check = false;
-
-          for (var i = 0; i < 7; i++) {
-            String today = DateFormat('yyyyMMdd')
-                .format(DateTime.now().toLocal().add(Duration(days: -i)));
-            String dayHour = DateFormat('Hmm')
-                .format(DateTime.now().toLocal().add(Duration(days: -i)));
-            String dayName = DateFormat('EEE')
-                .format(DateTime.now().toLocal().add(Duration(days: -i)));
-
-            if (dayName == 'Sat' || dayName == 'Sun') {
-            } else if (!check && int.parse(dayHour) < 1105) {
-              check = true;
-            } else {
-              date = today;
-              break;
-            }
+          if(exChangeRateList.length > 0){
+            print('삭제!');
+            databaseHelper.deleteAllExChangeRate();
           }
+          print('지나간다~');
 
-          if (date != null) {
-            Api.fetchPhotos(date).then((list) {
-              List<Rate> rate = list;
-              List<ExChangeRate> _exChangeRateList = [];
+          Api.fetchPhotos().then((list){
+            List<Rate> rate = list;
+            List<ExChangeRate> _exChangeRateList = [];
 
-              for (var i = 0; i < rate.length; i++) {
-                print('rateList : ${rate[i]}');
-                _save(date, rate[i].cur_unit, rate[i].cur_nm, rate[i].ttb,
-                    rate[i].tts, rate[i].deal_bas_r);
-                _exChangeRateList.add(ExChangeRate(
-                    date,
-                    rate[i].cur_unit,
-                    rate[i].cur_nm,
-                    rate[i].ttb,
-                    rate[i].tts,
-                    rate[i].deal_bas_r));
+            for (var i = 0; i < rate.length; i++) {
+              print('rateList : ${rate[i]}');
+              _save(Api.rateDate != '' ? Api.rateDate : today, rate[i].curUnit, rate[i].curNm, rate[i].ttb,
+                  rate[i].tts, rate[i].dealBasR);
+              _exChangeRateList.add(ExChangeRate(
+                  Api.rateDate != '' ? Api.rateDate : today,
+                  rate[i].curUnit,
+                  rate[i].curNm,
+                  rate[i].ttb,
+                  rate[i].tts,
+                  rate[i].dealBasR));
 
-                if (rate[i].cur_unit == 'USD' || rate[i].cur_unit == 'KRW') {
-                  List<Map<String, dynamic>> list = [
-                    {
-                      'rate_date': date,
-                      'cur_unit': rate[i].cur_unit,
-                      'cur_name': rate[i].cur_nm,
-                      'ttb': rate[i].ttb,
-                      'tts': rate[i].tts,
-                      'deal_bas_r': rate[i].deal_bas_r
-                    }
-                  ];
-
-                  if (rate[i].cur_unit == "USD") {
-                    Provider.of<Store>(context).setCurrentNationMap(list);
-                  } else {
-                    Provider.of<Store>(context).setTargetNationMap(list);
+              if (rate[i].curUnit == 'USD' || rate[i].curUnit == 'KRW') {
+                List<Map<String, dynamic>> list = [
+                  {
+                    'rate_date': Api.rateDate,
+                    'cur_unit': rate[i].curUnit,
+                    'cur_name': rate[i].curNm,
+                    'ttb': rate[i].ttb,
+                    'tts': rate[i].tts,
+                    'deal_bas_r': rate[i].dealBasR
                   }
+                ];
+
+                if (rate[i].curUnit == "USD") {
+                  Provider.of<Store>(context).setCurrentNationMap(list);
+                } else {
+                  Provider.of<Store>(context).setTargetNationMap(list);
                 }
               }
+            }
 
-              databaseHelper.deleteExChangeRate(date);
-              setState(() => exChangeList = _exChangeRateList);
-            });
-          }
+
+            setState(() => exChangeList = _exChangeRateList);
+
+          });
+
         } else {
           print('원래 있쮸?');
           setState(() => exChangeList = exChangeRateList);
@@ -146,9 +120,11 @@ class _ExchangeRateUIState extends State<ExchangeRateUI> {
     ExChangeRate exChangeRate =
         new ExChangeRate(date, curUnit, curNm, ttb, tts, dealBasR);
 
-//    Money money = new Money('test1', 150, '20190811');
+
 
     int result = await databaseHelper.insertExChangeRate(exChangeRate);
+
+
 
     if (result != 0) {
       print('성공');
@@ -157,33 +133,12 @@ class _ExchangeRateUIState extends State<ExchangeRateUI> {
     }
   }
 
-//  void updateCurrentNation(String unit) {
-//    final Future<Database> dbFuture = databaseHelper.initDatabase();
-//    dbFuture.then((database) {
-//      Future<List<Map<String, dynamic>>> cur =
-//          databaseHelper.getNationExchangeRate(unit);
-//
-//      cur.then((res) {
-//        Provider.of<Store>(context).setCurrentNationMap(res);
-//      });
-//    });
-//  }
-//  void updateTargetNation(String unit) {
-//    final Future<Database> dbFuture = databaseHelper.initDatabase();
-//    dbFuture.then((database) {
-//      Future<List<Map<String, dynamic>>> target =
-//      databaseHelper.getNationExchangeRate(unit);
-//
-//      target.then((res) {
-//        Provider.of<Store>(context).setTargetNationMap(res);
-//      });
-//    });
-//  }
 
   @override
   Widget build(BuildContext context) {
 //    if (exChangeList == null) {
 //      updateListView();
+////      updateListView2();
 //    }
 //    print('exChangeList : $exChangeList');
 
@@ -211,9 +166,7 @@ class _ExchangeRateUIState extends State<ExchangeRateUI> {
 }
 
 String returnUrl(String nation) {
-  var url = 'https://www.countryflags.io/$nation/shiny/64.png';
-
-  return url;
+  return 'https://www.countryflags.io/$nation/shiny/64.png';
 }
 
 class PhotosList extends StatefulWidget {
@@ -545,6 +498,7 @@ class _PhotosListState extends State<PhotosList> {
                                   textAlign: TextAlign.right,
                                   controller: _current,
                                   keyboardType: TextInputType.number,
+
                                   onChanged: (value) {
                                     updateCurrentToTargetAmount(value);
                                   },

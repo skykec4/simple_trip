@@ -1,43 +1,65 @@
+// To parse this JSON data, do
+//
+//     final rate = rateFromJson(jsonString);
+
+import 'dart:convert';
+
+List<Rate> rateFromJson(String str) => List<Rate>.from(json.decode(str).map((x) => Rate.fromJson(x)));
+
+String rateToJson(List<Rate> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
+
 class Rate {
-  final result;
-  final cur_unit;
-  final ttb;
-  final tts;
-  final deal_bas_r;
-  final bkpr;
-  final yy_efee_r;
-  final ten_dd_efee_r;
-  final kftc_bkpr;
-  final kftc_deal_bas_r;
-  final cur_nm;
+  int result;
+  String curUnit;
+  String ttb;
+  String tts;
+  String dealBasR;
+  String bkpr;
+  String yyEfeeR;
+  String tenDdEfeeR;
+  String kftcBkpr;
+  String kftcDealBasR;
+  String curNm;
 
-//  Rate({this.result, this.cur_unit, this.ttb, this.tts, this.deal_bas_r, this.bkpr, this.yy_efee_r, this.ten_dd_efee_r, this.kftc_bkpr, this.kftc_deal_bas_r, this.lcur_nm});
-  Rate(
-      {this.result,
-        this.cur_unit,
-        this.ttb,
-        this.tts,
-        this.deal_bas_r,
-        this.bkpr,
-        this.yy_efee_r,
-        this.ten_dd_efee_r,
-        this.kftc_bkpr,
-        this.kftc_deal_bas_r,
-        this.cur_nm});
+  Rate({
+    this.result,
+    this.curUnit,
+    this.ttb,
+    this.tts,
+    this.dealBasR,
+    this.bkpr,
+    this.yyEfeeR,
+    this.tenDdEfeeR,
+    this.kftcBkpr,
+    this.kftcDealBasR,
+    this.curNm,
+  });
 
-  factory Rate.fromJson(Map<String, dynamic> json) {
-    return Rate(
-      result: json['result'],
-      cur_unit: json['cur_unit'],
-      ttb: json['ttb'],
-      tts: json['tts'],
-      deal_bas_r: json['deal_bas_r'],
-      bkpr: json['bkpr'],
-      yy_efee_r: json['yy_efee_r'],
-      ten_dd_efee_r: json['ten_dd_efee_r'],
-      kftc_bkpr: json['kftc_bkpr'],
-      kftc_deal_bas_r: json['kftc_deal_bas_r'],
-      cur_nm: json['cur_nm'],
-    );
-  }
+  factory Rate.fromJson(Map<String, dynamic> json) => Rate(
+    result: json["result"],
+    curUnit: json["cur_unit"],
+    ttb: json["ttb"],
+    tts: json["tts"],
+    dealBasR: json["deal_bas_r"],
+    bkpr: json["bkpr"],
+    yyEfeeR: json["yy_efee_r"],
+    tenDdEfeeR: json["ten_dd_efee_r"],
+    kftcBkpr: json["kftc_bkpr"],
+    kftcDealBasR: json["kftc_deal_bas_r"],
+    curNm: json["cur_nm"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "result": result,
+    "cur_unit": curUnit,
+    "ttb": ttb,
+    "tts": tts,
+    "deal_bas_r": dealBasR,
+    "bkpr": bkpr,
+    "yy_efee_r": yyEfeeR,
+    "ten_dd_efee_r": tenDdEfeeR,
+    "kftc_bkpr": kftcBkpr,
+    "kftc_deal_bas_r": kftcDealBasR,
+    "cur_nm": curNm,
+  };
 }

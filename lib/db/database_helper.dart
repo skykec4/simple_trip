@@ -10,12 +10,17 @@ class DatabaseHelper {
   static DatabaseHelper _databaseHelper;
   static Database _database;
 
+  String userSettingTable = 'user_settings_table';
+  String userSettingId = 'id';
+  String userSettingCategory = 'category';
+
   String userDataTable = 'user_data_table';
   String userId = 'id';
   String userCategory = 'category';
+  String userTotalMoney = 'total_money';
   String userCurrentNation = 'current_nation';
   String userTargetNation = 'target_nation';
-  String userTotalMoney = 'total_money';
+  String userRegisterDate = 'register_date';
 
   String moneyTable = 'money_table';
   String colId = 'id';
@@ -23,6 +28,8 @@ class DatabaseHelper {
   String colTitle = 'title';
   String colMoney = 'money';
   String colDate = 'date';
+  String colPayment = 'payment';
+  String colInputDate = 'input_date';
 
   //
   String exChangeRateTable = 'exchange_rate_table';
@@ -61,12 +68,18 @@ class DatabaseHelper {
 
   void _createDb(Database db, int newVersion) async {
     await db.execute('''
+       CREATE TABLE $userSettingTable(
+        $userSettingId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $userSettingCategory Text
+        )''');
+    await db.execute('''
        CREATE TABLE $userDataTable(
         $userId INTEGER PRIMARY KEY AUTOINCREMENT,
         $userCategory Text,
+        $userTotalMoney INTEGER,
         $userCurrentNation Text,
         $userTargetNation Text,
-        $userTotalMoney INTEGER
+        $userRegisterDate Text
         )''');
     await db.execute('''
       CREATE TABLE $moneyTable(
@@ -74,7 +87,9 @@ class DatabaseHelper {
         $colCategory Text,
         $colTitle Text,
         $colMoney INTEGER, 
-        $colDate Text
+        $colDate Text,
+        $colPayment Text,
+        $colInputDate Text
         )''');
     await db.execute('''
        CREATE TABLE $exChangeRateTable(
@@ -86,7 +101,6 @@ class DatabaseHelper {
         $exDealBasR Text,
         PRIMARY KEY($exRateDate, $exCurUnit)
         )''');
-
   }
 
   Future<List<Map<String, dynamic>>> getMoneyMapList() async {
@@ -183,15 +197,26 @@ class DatabaseHelper {
     return result;
   }
 
-  Future<List<Money>> getTodayList(String date) async {
+  Future<List<Money>> getTodayList(String date, String category) async {
     Database db = await this.database;
 //    var result = await db.query(moneyTable, orderBy: '$colDate ASC');
 //    String _today = DateFormat('yyyyMMdd').format(DateTime.now());
-    String _today = date;
-    print(_today);
 
     var moneyMapList = await db.rawQuery(
-        'SELECT $colId,$colTitle,$colMoney,$colDate,(SELECT SUM($colMoney) FROM $moneyTable WHERE $colDate = $_today ) as total FROM $moneyTable WHERE $colDate = $_today ORDER BY $colDate ASC');
+        '''SELECT $colId,
+                  $colTitle,
+                  $colMoney,
+                  $colDate,
+                  $colPayment,
+                  (SELECT SUM($colMoney) 
+                     FROM $moneyTable 
+                    WHERE $colDate = $date 
+                      AND $colCategory = "$category" ) as total,
+                  $colInputDate 
+             FROM $moneyTable 
+            WHERE $colDate = $date 
+              AND $colCategory = "$category" 
+         ORDER BY $colId DESC''');
     print('moneyMapListmoneyMapListmoneyMapListmoneyMapList : $moneyMapList');
 //    var moneyMapList = await getMoneyMapList();
     int count = moneyMapList.length;
@@ -224,8 +249,12 @@ class DatabaseHelper {
   }
 
   /*
-  exChange_Rate
-   */
+  *********************
+  *********************
+  *** exChange_Rate ***
+  *********************
+  *********************
+  */
 
   Future<List<ExChangeRate>> getRecentExchangeRate() async {
     Database db = await this.database;
@@ -279,6 +308,13 @@ class DatabaseHelper {
     Database db = await this.database;
     var result = await db
         .rawDelete('DELETE FROM $exChangeRateTable WHERE $exRateDate = $date');
+//    var result = await db.update(moneyTable, money.toMap(), where: '$colId = ? ',whereArgs: [money.id]);
+    return result;
+  }
+
+  Future<int> deleteAllExChangeRate() async {
+    Database db = await this.database;
+    var result = await db.rawDelete('DELETE FROM $exChangeRateTable');
 //    var result = await db.update(moneyTable, money.toMap(), where: '$colId = ? ',whereArgs: [money.id]);
     return result;
   }
